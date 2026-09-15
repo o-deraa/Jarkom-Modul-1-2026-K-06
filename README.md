@@ -188,11 +188,11 @@ Setelah semua hal di atas dilakukan, kemudian dicek apakah setiap client sudah b
  
  Tes di atas menunjukkan bahwa setiap client berhasil memperoleh response dari google.com. Hal tersebut menunjukkan bahwa konfigurasi DNS resolver, NAT, dan IP forwarding telah berhasil sehingga setiap client dapat terhubung ke internet melalui router Lain.
 
- ### 5 - Backup Konfigurasi Jaringan
+ ### 5 - Setup Recovery Jaringan
 
 Eiri terus berupaya menanamkan kekacauan ke dalam jaringan. Untuk itu, perlu dibuat agar konfigurasi jaringan tidak hilang saat semua node di-restart. Pada tahap ini, konfigurasi Router Lain terlebih dahulu dibuat agar dapat dipulihkan secara otomatis ketika node kembali dijalankan.
 
-Konfigurasi interface disimpan pada `/etc/network/interfaces,` sedangkan konfigurasi IP forwarding dan NAT perlu dijalankan kembali karena keduanya merupakan konfigurasi runtime yang tidak bertahan setelah container dihentikan.
+Konfigurasi alamat dan gateway interface disimpan pada `/etc/network/interfaces`. Sementara itu, IP forwarding dan rule NAT pada `iptables` merupakan konfigurasi runtime yang berada pada state kernel dan tabel firewall container, sehingga perlu diterapkan kembali ketika container dijalankan kembali.
 
 Sebelum menentukan mekanisme untuk menjalankan konfigurasi tersebut secara otomatis, dilakukan pemeriksaan terhadap proses yang berjalan pada container Lain. Pemeriksaan dilakukan menggunakan command:
 
@@ -222,11 +222,6 @@ iptables -t nat -A POSTROUTING -o eth0 -s 192.214.0.0/16 -j MASQUERADE
 EOF
 ```
 
-Lalu permissionm file diatur dengan:
-```bash
-chmod +x /root/.bash_profile
-```
-
 Untuk menguji apakah .bash_profile benar-benar dijalankan oleh login shell, dilakukan tes sederhana dengan cara menghapus rule pada NAT menggunakan command berikut.
 ```bash
 iptables -t nat -D POSTROUTING -o eth0 -s 192.214.0.0/16 -j MASQUERADE
@@ -251,3 +246,202 @@ Setelah Bash login dijalankan, tabel NAT diperiksa kembali dan diperoleh hasil s
 ![alt text](image-31.png)
 
 Hasilnya menunjukkan rule MASQUERADE kembali tersedia dan membuktikan bahwa konfigurasi pada `/root/.bash_profile` berhasil dijalankan ketika Bash login shell dimulai. IP forwarding juga diperiksa dan mengembalikan angka `1` yagn menandakan bahwa IP forwarding telah aktif.
+
+Selanjutnya, akan dilakukan konfigurasi file `/root/.bash_profile` pada masing - masing client.
+
+#### Alice
+```bash
+cat > /root/.bash_profile <<'EOF'
+#!/bin/bash
+
+cat > /etc/network/interfaces <<'NETEOF'
+auto eth0
+iface eth0 inet static
+    address 192.214.1.2
+    netmask 255.255.255.0
+    gateway 192.214.1.1
+NETEOF
+
+echo "nameserver 192.168.122.1" > /etc/resolv.conf
+
+ifup eth0 2>/dev/null || true
+EOF
+```
+
+#### Mika
+```bash
+cat > /root/.bash_profile <<'EOF'
+#!/bin/bash
+
+cat > /etc/network/interfaces <<'NETEOF'
+auto eth0
+iface eth0 inet static
+    address 192.214.1.3
+    netmask 255.255.255.0
+    gateway 192.214.1.1
+NETEOF
+
+echo "nameserver 192.168.122.1" > /etc/resolv.conf
+
+ifup eth0 2>/dev/null || true
+EOF
+```
+
+#### Chisa
+```bash
+cat > /root/.bash_profile <<'EOF'
+#!/bin/bash
+
+cat > /etc/network/interfaces <<'NETEOF'
+auto eth0
+iface eth0 inet static
+    address 192.214.2.2
+    netmask 255.255.255.0
+    gateway 192.214.2.1
+NETEOF
+
+echo "nameserver 192.168.122.1" > /etc/resolv.conf
+
+ifup eth0 2>/dev/null || true
+EOF
+```
+
+#### Knights
+```bash
+cat > /root/.bash_profile <<'EOF'
+#!/bin/bash
+
+cat > /etc/network/interfaces <<'NETEOF'
+auto eth0
+iface eth0 inet static
+    address 192.214.3.2
+    netmask 255.255.255.0
+    gateway 192.214.3.1
+NETEOF
+
+echo "nameserver 192.168.122.1" > /etc/resolv.conf
+
+ifup eth0 2>/dev/null || true
+EOF
+```
+
+#### Eiri
+```bash
+cat > /root/.bash_profile <<'EOF'
+#!/bin/bash
+
+cat > /etc/network/interfaces <<'NETEOF'
+auto eth0
+iface eth0 inet static
+    address 192.214.3.3
+    netmask 255.255.255.0
+    gateway 192.214.3.1
+NETEOF
+
+echo "nameserver 192.168.122.1" > /etc/resolv.conf
+
+ifup eth0 2>/dev/null || true
+EOF
+```
+
+Pada scrip - script di atas, terdapat baris kode `ifup eth0 2>/dev/null || true`. Command `ifup eth0` digunakan untuk mengaktifkan interface berdasarkan konfigurasi pada `/etc/network/interfaces`. Penggunaan `2>/dev/null || true` berfungsi mencegah proses startup berhenti apabila interface sudah berada dalam kondisi aktif.
+
+Selanjutnya, akan dibuat suatu script untuk melakukan verifikasi di `/root/cek_status.sh` pada router Lain. Script akan menampilkan  ringkasan interface (ip -br a) dan status tabel NAT (iptables -t nat -L -v -n) setelah reboot. Berikut adalah isi dari script tersebut:
+
+```bash
+cat > /root/cek_status.sh <<'EOF'
+#!/bin/sh
+
+echo "===== STATUS INTERFACE ====="
+ip -br a
+
+echo
+echo "===== STATUS NAT ====="
+iptables -t nat -L -v -n
+EOF
+
+chmod +x /root/cek_status.sh
+```
+
+ Validasi dilakukan melalui dua parameter  utama. Command `ip -br a` berfungsi untuk memastikan seluruh interface jaringan beserta alokasi alamat IP-nya tetap aktif dan terkonfigurasi dengan benar. Command iptables -t nat -L -v -n digunakan untuk mengonfirmasi keberadaan dan konfigurasi rule NAT pada tabel NAT. 
+
+### 6 - Display Filter
+
+Mika mencurigai adanya anomali traffic pada segmen jaringannya. Jalankan generator traffic pada node Mika, lalu lakukan packet sniffing menggunakan Wireshark pada interface node Mika. Terapkan display filter khusus untuk menyaring paket yang berprotokol DNS atau ICMP. Tunjukkan screenshot hasil filter beserta ringkasan paket yang lolos.
+
+Pertama, file harus didownload dan di-unzip terlebih dahulu di dalam node Mika.
+
+```bash
+gdown --folder "https://drive.google.com/drive/folders/1ZjFvWIjvAQAjE9pPthm7V_bGyaSt93lY?usp=sharing" -O traffic
+
+cd traffic/
+unzip traffic_protocol7.zip
+```
+
+
+![alt text](image-32.png)
+
+![alt text](image-33.png)
+
+Setelah file diunduh dan diekstrak, ditemukan file bernama `traffic_protocol7.sh`. Setelah itu, file dijalankan di dalam node Mika dengan cara:
+
+```bash
+bash traffic_protocol7.shh
+```
+
+File lalu akan membanjiri jaringan di node Mika dengan banyak paket. Untuk mengecek paket yang masuk menggunakan wireshark, digunakan caputring antara connecting line Mika dan switch 1.
+
+![alt text](image-34.png)
+
+Di dalam wireshark akan terlihat jelas semua paket yang masuk tadi. 
+
+![alt text](image-35.png)
+
+Gambar menunjukkan sesi capture Wireshark pada interface `Switch1 Ethernet2 to Mika eth0 `tanpa display filter aktif, sehingga seluruh jenis protokol tertampil apa adanya. Paket yang terlihat didominasi oleh traffic ICMP berupa aktivitas ping berulang dari host `192.214.1.3` ke dua tujuan yaitu `8.8.8.8` (Google DNS) dan `1.1.1.1` (Cloudflare), dengan sequence number yang terus bertambah mulai dari seq 3/768 hingga seq 5/1280 dan semua mendapat balasan *reply* yang sukses. Di penghujung capture, muncul empat paket ARP pada timestamp sekitar 5.40 detik, di mana dua perangkat dengan MAC `02:42:d7:22:4b:01` dan `02:42:29:1f:8f:00` saling bertukar informasi untuk memetakan alamat IP `192.214.1.3` dan `192.214.1.1` ke alamat MAC masing-masing, yang merupakan proses resolusi alamat yang umum terjadi di jaringan lokal.
+
+Untuk  menyaring paket yang berprotokol DNS atau ICMP, cukup mengetikkan `dns || icmp` pada display filter, sehingga diperoleh hasil sebagai berikut:
+
+![alt text](image-36.png)
+
+Wireshark hanya menampilkan paket yang termasuk protokol DNS atau ICMP, menyembunyikan seluruh traffic lain seperti ARP, TCP, maupun protokol lainnya dari tampilan. Dari keseluruhan sesi capture, terdapat 18 paket yang berhasil lolos filter — terdiri dari 10 paket DNS dan 8 paket ICMP.
+
+Paket DNS mencakup query tipe A dan AAAA ke beberapa domain seperti its.ac.id, github.com, cloudflare.com, dan google.com, dengan DNS server yang digunakan meliputi resolver lokal 192.168.122.1, Google 8.8.8.8, dan Cloudflare 1.1.1.1. Sementara itu, paket ICMP merekam aktivitas ping ke tiga tujuan berbeda yaitu 8.8.8.8, 1.1.1.1, dan 103.94.189.4 (IP hasil resolusi its.ac.id) yang semuanya berhasil mendapatkan reply, secara langsung menunjukan konektivitas jaringan dalam kondisi baik selama sesi capture berlangsung.
+
+### 7 - Bikin Server
+
+Udah ngantuk wak
+
+#### Instal server package
+```bash
+apk add vsftpd
+```
+
+#### Buat shared folder
+
+```bash
+mkdir -p /var/wired/data
+```
+
+#### Buat User
+
+tambah /sbin/login ke /etc/shells
+```bash
+grep -qxF /sbin/nologin /etc/shells || echo "/sbin/nologin" >> /etc/shells
+```
+
+baut user
+```bash
+adduser -D -h /var/wired/data -s /sbin/nologin alice
+adduser -D -h /var/wired/data -s /sbin/nologin mika
+adduser -D -h /var/wired/data -s /sbin/nologin eiri
+```
+
+kasi pass
+```bash
+passwd alice
+passwd mika
+passwd eiri
+
+```
+
+atur hak akses
