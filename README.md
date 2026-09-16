@@ -407,41 +407,351 @@ Wireshark hanya menampilkan paket yang termasuk protokol DNS atau ICMP, menyembu
 
 Paket DNS mencakup query tipe A dan AAAA ke beberapa domain seperti its.ac.id, github.com, cloudflare.com, dan google.com, dengan DNS server yang digunakan meliputi resolver lokal 192.168.122.1, Google 8.8.8.8, dan Cloudflare 1.1.1.1. Sementara itu, paket ICMP merekam aktivitas ping ke tiga tujuan berbeda yaitu 8.8.8.8, 1.1.1.1, dan 103.94.189.4 (IP hasil resolusi its.ac.id) yang semuanya berhasil mendapatkan reply, secara langsung menunjukan konektivitas jaringan dalam kondisi baik selama sesi capture berlangsung.
 
-### 7 - Bikin Server
+### 7 - Membuat Server FTP
 
-Udah ngantuk wak
+Chisa memutuskan mendirikan FTP Server pada node miliknya dengan menggunakan /`var/wired/data sebagai shared folder`. Sebelum melakukan konfigurasi, package vsftpd perlu di-install terlebih dahulu dengan perintah berikut:
 
-#### Instal server package
 ```bash
 apk add vsftpd
 ```
 
-#### Buat shared folder
+![alt text](image-37.png)
+
+Setelah package FTP terpasang,` /sbin/nologin` didaftarkan ke `/etc/shells`. Shell ini digunakan pada akun FTP agar user dapat digunakan untuk autentikasi FTP tanpa memberikan akses ke interactive shell pada sistem.
 
 ```bash
-mkdir -p /var/wired/data
+grep -qxF "/sbin/nologin" /etc/shells || echo "/sbin/nologin" >> /etc/shells
 ```
 
-#### Buat User
+Selanjutnya dibuat direktori `/var/wired/data` yang akan digunakan sebagai shared folder untuk menyimpan file yang dapat diakses melalui FTP. Variabel `SHARED` digunakan agar path tersebut dapat digunakan kembali pada konfigurasi user berikutnya.
 
-tambah /sbin/login ke /etc/shells
 ```bash
-grep -qxF /sbin/nologin /etc/shells || echo "/sbin/nologin" >> /etc/shells
+SHARED="/var/wired/data"
+mkdir -p "$SHARED"
 ```
 
-baut user
+Setelah server dan shared folder disiapkan, selanjutnya dibuat tiga user yang akan digunakan untuk autentikasi FTP, yaitu `alice`, `mika`, dan `eiri`.
+
 ```bash
-adduser -D -h /var/wired/data -s /sbin/nologin alice
-adduser -D -h /var/wired/data -s /sbin/nologin mika
-adduser -D -h /var/wired/data -s /sbin/nologin eiri
-```
+id alice >/dev/null 2>&1 || adduser -D -h "$SHARED" -s /sbin/nologin alice
+echo "alice:alice123" | chpasswd
 
-kasi pass
+id mika >/dev/null 2>&1 || adduser -D -h "$SHARED" -s /sbin/nologin mika
+echo "mika:mika123" | chpasswd
+
+id eiri >/dev/null 2>&1 || adduser -D -h "$SHARED" -s /sbin/nologin eiri
+echo "eiri:eiri123" | chpasswd
+```
+Setiap user diberikan password dengan pola nama user diikuti 123, yaitu `alice123`, `mika123`, dan `eiri123`.
+
+Setelah user dibuat, home directory ketiga user dipastikan mengarah ke /var/wired/data. Pada Alpine Linux, perubahan ini dilakukan dengan memperbarui entry user pada /etc/passwd karena utilitas usermod tidak tersedia secara default.
+
 ```bash
-passwd alice
-passwd mika
-passwd eiri
-
+sed -i 's|^alice:.*$|alice:x:1000:1000::/var/wired/data:/sbin/nologin|' /etc/passwd 
+sed -i 's|^mika:.*$|mika:x:1001:1001::/var/wired/data:/sbin/nologin|' /etc/passwd 
+sed -i 's|^eiri:.*$|eiri:x:1002:1002::/var/wired/data:/sbin/nologin|' /etc/passwd
 ```
 
-atur hak akses
+Konfigurasi tersebut memastikan ketiga user memiliki /var/wired/data sebagai home directory dan tetap menggunakan /sbin/nologin sebagai shell.
+
+Selanjutnya adalah membuat hak akses untuk tiap user seusai dengan ketentuan berikut:
+- Alice: read & write
+- Mika: read-only
+- Eiri: blacklist/tidak memiliki akses FTP
+
+Sebelum itu, kita perlu mengatur permission shared folder secara langsung di filesystem linux dengan cara:
+
+```bash
+chown alice:alice "$SHARED"
+chmod 755 "$SHARED"
+```
+
+Perintah tersebut menjadikan Alice sebagai pemilik shared folder dan memberikan permission `rwx` kepada owner serta` r-x` kepada user lainnya. Dengan demikian, Alice memiliki hak untuk membaca dan menulis pada folder, sedangkan user lainnya hanya memiliki akses untuk membaca isi folder dan masuk ke dalamnya.
+
+Selanjutnya dilakukan konfigurasi untuk vsftpd dengan cara berikut:
+
+```bash
+cat > /etc/vsftpd/vsftpd.conf <<'CFG'
+listen=YES
+listen_ipv6=NO
+listen_address=0.0.0.0
+anonymous_enable=NO
+local_enable=YES
+write_enable=YES
+chroot_local_user=YES
+allow_writeable_chroot=YES
+user_config_dir=/etc/vsftpd_users
+userlist_enable=YES
+userlist_deny=NO
+userlist_file=/etc/vsftpd.user_list
+seccomp_sandbox=NO
+CFG
+```
+Konfigurasi tersebut mengaktifkan akses FTP menggunakan akun lokal dan menonaktifkan anonymous login sehingga setiap koneksi harus menggunakan akun yang telah dibuat. `listen_address=0.0.0.0` membuat server menerima koneksi FTP melalui seluruh interface IPv4. `chroot_local_user` membatasi user agar tetap berada di dalam direktori home-nya, sedangkan `user_config_dir` digunakan untuk menerapkan konfigurasi yang berbeda pada masing-masing user. Selain itu, `userlist_enable=YES` dan `userlist_deny=NO` membuat `/etc/vsftpd.user_list `berfungsi sebagai allowlist yang menentukan user mana yang diperbolehkan melakukan login ke FTP. `seccomp_sandbox=NO` digunakan agar vsftpd dapat berjalan dengan baik di Alpine Linux.
+
+
+
+Kemudian ditentukan user mana saja yang diperbolehkan untuk melakukan login.
+
+```bash
+cat > /etc/vsftpd.user_list <<'USERS'
+alice
+mika
+USERS
+```
+File tersebut berisi daftar user yang diizinkan untuk melakukan login ke FTP karena konfigurasi menggunakan `userlist_deny=NO`. Alice dan Mika dimasukkan ke dalam daftar, sedangkan Eiri tidak dimasukkan sehingga percobaan login menggunakan akun Eiri akan ditolak.
+
+Selanjutnya dibuat konfigurasi khusus untuk masing-masing user melalui direktori `/etc/vsftpd_users`.
+
+```bash
+mkdir -p /etc/vsftpd_users
+
+cat > /etc/vsftpd_users/alice <<'ALICE'
+local_root=/var/wired/data
+write_enable=YES
+ALICE
+
+cat > /etc/vsftpd_users/mika <<'MIKA'
+local_root=/var/wired/data
+write_enable=NO
+MIKA
+```
+
+Direktori `/etc/vsftpd_users` digunakan untuk menyimpan konfigurasi khusus masing-masing user. Alice diberikan `write_enable=YES` sehingga dapat melakukan operasi baca dan tulis, sedangkan Mika diberikan `write_enable=NO` sehingga akses tulis melalui FTP dinonaktifkan dan Mika hanya dapat membaca file.
+
+
+Terakhir, server perlu dijalankan dengan cara berikut:
+
+```bash
+vsftpd /etc/vsftpd/vsftpd.conf &
+ps | grep vsftpd
+```
+Setelah seluruh konfigurasi selesai, `vsftpd` dijalankan menggunakan file konfigurasi yang telah dibuat. Selanjutnya dilakukan pemeriksaan proses untuk memastikan `vsftpd` telah berjalan dan siap menerima koneksi FTP dari client.
+
+Semua hal tadi dapat dijalankan secara langsung melalui satu script, di sini kami memasukkannya ke dalam script setup_ftp.sh.
+
+- setup_ftp.sh
+```bash
+#!/bin/bash
+
+# Install vsftpd jika belum ada
+apk add --no-cache vsftpd >/dev/null 2>&1
+
+# Daftarkan shell nologin untuk akun FTP
+grep -qxF "/sbin/nologin" /etc/shells || echo "/sbin/nologin" >> /etc/shells
+
+# Shared folder
+SHARED="/var/wired/data"
+mkdir -p "$SHARED"
+
+# Buat user FTP jika belum ada
+id alice >/dev/null 2>&1 || adduser -D -h "$SHARED" -s /sbin/nologin alice
+echo "alice:alice123" | chpasswd
+
+id mika >/dev/null 2>&1 || adduser -D -h "$SHARED" -s /sbin/nologin mika
+echo "mika:mika123" | chpasswd
+
+id eiri >/dev/null 2>&1 || adduser -D -h "$SHARED" -s /sbin/nologin eiri
+echo "eiri:eiri123" | chpasswd
+
+# Pastikan home directory setiap user adalah shared folder
+sed -i 's|^alice:.*$|alice:x:1000:1000::/var/wired/data:/sbin/nologin|' /etc/passwd
+sed -i 's|^mika:.*$|mika:x:1001:1001::/var/wired/data:/sbin/nologin|' /etc/passwd
+sed -i 's|^eiri:.*$|eiri:x:1002:1002::/var/wired/data:/sbin/nologin|' /etc/passwd
+
+# Permission shared folder
+chown alice:alice "$SHARED"
+chmod 755 "$SHARED"
+
+# Konfigurasi utama vsftpd
+cat > /etc/vsftpd/vsftpd.conf <<'CFG'
+listen=YES
+listen_ipv6=NO
+listen_address=0.0.0.0
+anonymous_enable=NO
+local_enable=YES
+write_enable=YES
+chroot_local_user=YES
+allow_writeable_chroot=YES
+user_config_dir=/etc/vsftpd_users
+userlist_enable=YES
+userlist_deny=NO
+userlist_file=/etc/vsftpd.user_list
+seccomp_sandbox=NO
+CFG
+
+# User yang diizinkan login FTP
+cat > /etc/vsftpd.user_list <<'USERS'
+alice
+mika
+USERS
+
+# Konfigurasi per-user
+mkdir -p /etc/vsftpd_users
+
+cat > /etc/vsftpd_users/alice <<'ALICE'
+local_root=/var/wired/data
+write_enable=YES
+ALICE
+
+cat > /etc/vsftpd_users/mika <<'MIKA'
+local_root=/var/wired/data
+write_enable=NO
+MIKA
+
+# Jalankan vsftpd jika belum berjalan
+killall vsftpd 2>/dev/null || true
+vsftpd /etc/vsftpd/vsftpd.conf &
+```
+
+Setelah semua konfigurasi selesai, langkah terakhir yaitu membuktikan bahwa semua konfigurasi yagn sudah dibuat berjalan seperti seharusnya. Pengujian yang akan dilakukan yaitu:
+- Alice membuat signal_alice.txt dan meng-upload ke FTP Chisa.
+- Eiri mencoba login ke FTP Chisa dan ditolak.
+
+Pertama, dilakukan pengujian dengan mengupload file dari Alice ke FPT Chisa.
+```bash
+touch signal_alice.txt
+echo "Signal from Alice" > signal_alice.txt
+
+lftp -u alice,alice123 192.214.2.2
+
+put signal_alice.txt
+exit
+```
+![alt text](image-38.png)
+
+Selanjutnya dilakukan verifikasi pada server FTP milik Chisa.
+
+![alt text](image-39.png)
+
+Hasil tersebut menunjukkan bahwa `signal_alice.txt` berhasil tersimpan pada shared folder, sehingga dapat dibuktikan bahwa user `alice` memiliki hak akses read & write.
+
+Eiri
+![alt text](image-40.png)
+
+Pesan `530 Permission denied` menunjukkan bahwa autentikasi FTP untuk user eiri ditolak oleh server. Hal tersebut terjadi karena konfigurasi menggunakan `userlist_deny=NO`, sehingga hanya user yang tercantum pada `/etc/vsftpd.user_list`, yaitu alice dan mika, yang diizinkan melakukan login ke FTP Server.
+
+### 8 - Kngihts
+
+Kelompok rahasia Knights perlu mengirimkan dokumen laporan intelijen ke FTP Server Chisa. Lakukan koneksi FTP client dari node Knights ke FTP Server Chisa menggunakan akun alice. Upload file berikut (link file). Analisis sesi Wireshark dan sebutkan: perintah FTP untuk upload (STOR), kode status sukses server (226), dan port data TCP yang dinegosiasikan pada mode PASV.
+
+Pertama, file harus didownload dan di-unzip terlebih dahulu di dalam node Knights.
+
+```bash
+gdown "https://drive.google.com/file/d/1lFepK4wFmx55PnRki3NsHW-ivudSR0vg/view?usp=drive_link" -O traffic
+
+unzip traffic
+```
+
+![alt text](image-41.png)
+
+Setelah file didownlaod dan di-unzip, ditemukan 1 file baru yakni `knights_report.txt`. File `knights_report` adalah dokumen laporan intelijen yang akan dikirimkan ke FTP Server Chisa,
+
+Setelah file tersedia, node Knights melakukan koneksi ke FTP Server Chisa menggunakan akun `alice`. Alamat IP FTP Server Chisa adalah `192.214.2.2`.
+
+```bash
+lftp -u alice,alice123 192.214.2.2
+```
+Setelah berhasil terhubung, passive mode diaktifkan menggunakan perintah berikut:
+
+```
+set ftp:passive-mode true
+```
+Perintah tersebut digunakan untuk memastikan client menggunakan FTP Passive Mode (PASV) dalam membangun koneksi data. Pada mode ini, client meminta server menentukan port yang akan digunakan untuk koneksi data.
+
+Setelah koneksi FTP berhasil dibuat, file` knights_report.txt` dikirimkan ke server menggunakan perintah `put`.
+
+```
+put knights_report.txt
+```
+
+![alt text](image-42.png)
+
+Berdasarkan hasil pada terminal, proses transfer `knights_report.txt` berhasil dilakukan dari node Knights menuju FTP Server Chisa. Untuk memastikan bahwa file benar-benar telah tersimpan pada server, dilakukan verifikasi secara langsung pada node Chisa.
+
+```bash
+ls -lh /var/wired/data
+```
+![alt text](image-43.png)
+
+Hasil verifikasi menunjukkan bahwa file `knights_report.txt` telah terdapat di dalam direktori `/var/wired/data` pada node Chisa. Hal tersebut membuktikan bahwa file yang dikirim dari Knights berhasil diterima dan disimpan oleh FTP Server.
+
+
+Selama proses transfer berlangsung, trafik jaringan antara Knights dan FTP Server Chisa ditangkap menggunakan Wireshark. Capture kemudian dianalisis untuk mengidentifikasi tahapan komunikasi FTP, khususnya proses negosiasi passive mode dan transfer file.
+
+Hasil wireshark
+![alt text](image-44.png)
+![alt text](image-45.png)
+
+Analisis trafik dilakukan menggunakan Wireshark pada koneksi antara node Knights sebagai FTP Client dengan node Chisa sebagai FTP Server. Node Knights menggunakan alamat IP `192.214.3.2`, sedangkan FTP Server Chisa menggunakan alamat IP `192.214.2.2`. Koneksi dilakukan menggunakan akun `alice` untuk mengunggah file `knights_report.txt`.
+
+Berdasarkan hasil packet capture, sesi FTP diawali ketika client Knights terhubung ke FTP Server Chisa. Server memberikan response 220 yang menunjukkan bahwa layanan FTP tersedia dan server siap menerima koneksi. Selanjutnya terjadi proses negosiasi fitur melalui perintah `FEAT` dengan response 211. Client juga mencoba menggunakan `AUTH TLS`, tetapi server memberikan response 530, sehingga koneksi dilanjutkan menggunakan FTP tanpa enkripsi TLS.
+
+Proses autentikasi kemudian dilakukan menggunakan perintah `USER alice`, yang diikuti response 331 dari server untuk meminta password. Client mengirimkan password `alice123` melalui perintah `PASS`, kemudian server memberikan response 230, yang menunjukkan bahwa autentikasi berhasil. Setelah berhasil login, client menjalankan perintah `PWD` dan `TYPE I` untuk mengetahui direktori aktif serta menggunakan mode transfer binary.
+
+
+Pada paket No. 40 terlihat perintah:
+
+```text
+Request: STOR knights_report.txt
+```
+
+Perintah tersebut dikirim dari `192.214.3.2` sebagai client menuju `192.214.2.2` sebagai server. Perintah `STOR` digunakan dalam FTP untuk meminta server menyimpan data yang dikirim oleh client sebagai sebuah file. Dalam sesi ini, file yang dikirim adalah `knights_report.txt`, sehingga paket tersebut menjadi bukti bahwa proses upload dilakukan dari node Knights ke FTP Server Chisa.
+
+
+Sebelum proses upload, client menggunakan passive mode dengan mengirimkan perintah `PASV`. Pada paket No. 36, server memberikan response:
+
+```text
+227 Entering Passive Mode (192,214,2,2,63,66)
+```
+
+Response tersebut menunjukkan bahwa server FTP meminta client menggunakan koneksi data pada alamat `192.214.2.2` dengan port yang ditentukan oleh dua nilai terakhir, yaitu `p1 = 63` dan `p2 = 66`.
+
+Port TCP data dihitung menggunakan formula:
+
+```text
+Port = (p1 × 256) + p2
+      = (63 × 256) + 66
+      = 16.194
+```
+
+Dengan demikian, port TCP data yang dinegosiasikan pada passive mode adalah 16.194. Port tersebut digunakan untuk koneksi data FTP yang terpisah dari koneksi control FTP.
+
+
+Setelah perintah `STOR` dikirim dan data file ditransfer, server memberikan response pada paket No. 47:
+
+```text
+Response: 226 Transfer complete.
+```
+
+Kode status 226 menunjukkan bahwa koneksi data telah ditutup dan operasi transfer file telah berhasil diselesaikan. Dengan demikian, response ini menjadi bukti dari sisi server bahwa proses upload `knights_report.txt` telah selesai.
+
+Berdasarkan hasil capture, keseluruhan sesi FTP dapat diringkas sebagai berikut:
+
+```text
+Knights (192.214.3.2)
+        │
+        │ Connect
+        ▼
+Chisa FTP Server (192.214.2.2)
+        │
+        ├── 220 Service ready
+        ├── FEAT → 211
+        ├── AUTH TLS → 530
+        ├── USER alice → 331
+        ├── PASS alice123 → 230
+        ├── PWD → 257
+        ├── TYPE I → 200
+        ├── PASV → 227
+        │      └── Data Port = 16.194
+        │
+        ├── STOR knights_report.txt
+        │      └── File ditransfer melalui koneksi data
+        │
+        ├── 226 Transfer complete
+        └── QUIT → 221
+```
+
+Dari hasil analisis tersebut dapat disimpulkan bahwa node Knights berhasil melakukan upload `knights_report.txt` ke FTP Server Chisa menggunakan akun `alice`. Tiga informasi utama yang diperoleh dari packet capture adalah perintah `STOR knights_report.txt` sebagai indikasi proses upload, response `226 Transfer complete` sebagai indikasi transfer berhasil, serta port TCP 16.194 yang dinegosiasikan server melalui response `227` pada passive mode.
+
+### 9
