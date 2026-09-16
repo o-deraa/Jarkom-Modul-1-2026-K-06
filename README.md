@@ -631,9 +631,9 @@ Eiri
 
 Pesan `530 Permission denied` menunjukkan bahwa autentikasi FTP untuk user eiri ditolak oleh server. Hal tersebut terjadi karena konfigurasi menggunakan `userlist_deny=NO`, sehingga hanya user yang tercantum pada `/etc/vsftpd.user_list`, yaitu alice dan mika, yang diizinkan melakukan login ke FTP Server.
 
-### 8 - Kngihts
+### 8 - Pengiriman File dari Knights ke FTP Server Chisa
 
-Kelompok rahasia Knights perlu mengirimkan dokumen laporan intelijen ke FTP Server Chisa. Lakukan koneksi FTP client dari node Knights ke FTP Server Chisa menggunakan akun alice. Upload file berikut (link file). Analisis sesi Wireshark dan sebutkan: perintah FTP untuk upload (STOR), kode status sukses server (226), dan port data TCP yang dinegosiasikan pada mode PASV.
+Kelompok rahasia Knights perlu mengirimkan dokumen laporan intelijen ke FTP Server Chisa. Lakukan koneksi FTP client dari node Knights ke FTP Server Chisa menggunakan akun alice. Analisis sesi Wireshark dan sebutkan: perintah FTP untuk upload (STOR), kode status sukses server (226), dan port data TCP yang dinegosiasikan pada mode PASV.
 
 Pertama, file harus didownload dan di-unzip terlebih dahulu di dalam node Knights.
 
@@ -754,4 +754,168 @@ Chisa FTP Server (192.214.2.2)
 
 Dari hasil analisis tersebut dapat disimpulkan bahwa node Knights berhasil melakukan upload `knights_report.txt` ke FTP Server Chisa menggunakan akun `alice`. Tiga informasi utama yang diperoleh dari packet capture adalah perintah `STOR knights_report.txt` sebagai indikasi proses upload, response `226 Transfer complete` sebagai indikasi transfer berhasil, serta port TCP 16.194 yang dinegosiasikan server melalui response `227` pada passive mode.
 
-### 9
+### 9 - 
+
+
+
+
+### 10 - Uji Ketahanan Koneksi Knights ke Server Chisa
+
+Knights melancarkan uji ketahanan koneksi ke server Chisa untuk menguji latensi jaringan The Wired. Kirimkan paket ping dari node Knights ke node Chisa dengan payload khusus 128 bytes dan interval 0.3 detik sebanyak 77 paket (ping -c 77 -s 128 -i 0.3 <IP_Chisa>). Buka Wireshark, catat nilai ICMP Type dan Code untuk Echo Request vs Echo Reply, serta analisis packet loss dan RTT (min/avg/max).
+
+Untuk melakukan pengujian tersebut, cukup menjalankan command berikut:
+
+```bash
+ping -c 77 -s 128 -i 0.3 192.214.2.2
+```
+Parameter `-c 77` digunakan untuk menentukan jumlah paket yang dikirim sebanyak 77 paket, -s 128 menentukan ukuran payload ICMP sebesar 128 bytes, sedangkan `-i 0.3` menentukan interval pengiriman antar-paket sebesar 0,3 detik. Alamat `192.214.2.2` merupakan alamat IP node Chisa.
+
+Diperoleh hasil ping sebagai berikut:
+
+```bash
+Knights:~# ping -c 77 -s 128 -i 0.3 192.214.2.2
+PING 192.214.2.2 (192.214.2.2) 128(156) bytes of data.
+136 bytes from 192.214.2.2: icmp_seq=1 ttl=63 time=1.03 ms
+136 bytes from 192.214.2.2: icmp_seq=2 ttl=63 time=0.700 ms
+136 bytes from 192.214.2.2: icmp_seq=3 ttl=63 time=0.881 ms
+136 bytes from 192.214.2.2: icmp_seq=4 ttl=63 time=0.655 ms
+136 bytes from 192.214.2.2: icmp_seq=5 ttl=63 time=0.730 ms
+136 bytes from 192.214.2.2: icmp_seq=6 ttl=63 time=0.854 ms
+136 bytes from 192.214.2.2: icmp_seq=7 ttl=63 time=0.823 ms
+136 bytes from 192.214.2.2: icmp_seq=8 ttl=63 time=0.966 ms
+136 bytes from 192.214.2.2: icmp_seq=9 ttl=63 time=0.837 ms
+136 bytes from 192.214.2.2: icmp_seq=10 ttl=63 time=0.469 ms
+136 bytes from 192.214.2.2: icmp_seq=11 ttl=63 time=0.464 ms
+136 bytes from 192.214.2.2: icmp_seq=12 ttl=63 time=0.422 ms
+136 bytes from 192.214.2.2: icmp_seq=13 ttl=63 time=0.408 ms
+136 bytes from 192.214.2.2: icmp_seq=14 ttl=63 time=0.672 ms
+136 bytes from 192.214.2.2: icmp_seq=15 ttl=63 time=0.459 ms
+136 bytes from 192.214.2.2: icmp_seq=16 ttl=63 time=0.433 ms
+136 bytes from 192.214.2.2: icmp_seq=17 ttl=63 time=0.519 ms
+136 bytes from 192.214.2.2: icmp_seq=18 ttl=63 time=0.480 ms
+136 bytes from 192.214.2.2: icmp_seq=19 ttl=63 time=0.272 ms
+136 bytes from 192.214.2.2: icmp_seq=20 ttl=63 time=0.476 ms
+136 bytes from 192.214.2.2: icmp_seq=21 ttl=63 time=0.442 ms
+136 bytes from 192.214.2.2: icmp_seq=22 ttl=63 time=0.452 ms
+136 bytes from 192.214.2.2: icmp_seq=23 ttl=63 time=0.446 ms
+136 bytes from 192.214.2.2: icmp_seq=24 ttl=63 time=0.461 ms
+136 bytes from 192.214.2.2: icmp_seq=25 ttl=63 time=0.413 ms
+136 bytes from 192.214.2.2: icmp_seq=26 ttl=63 time=0.445 ms
+136 bytes from 192.214.2.2: icmp_seq=27 ttl=63 time=0.455 ms
+136 bytes from 192.214.2.2: icmp_seq=28 ttl=63 time=0.488 ms
+136 bytes from 192.214.2.2: icmp_seq=29 ttl=63 time=0.447 ms
+136 bytes from 192.214.2.2: icmp_seq=30 ttl=63 time=0.482 ms
+136 bytes from 192.214.2.2: icmp_seq=31 ttl=63 time=0.618 ms
+136 bytes from 192.214.2.2: icmp_seq=32 ttl=63 time=0.545 ms
+136 bytes from 192.214.2.2: icmp_seq=33 ttl=63 time=0.562 ms
+136 bytes from 192.214.2.2: icmp_seq=34 ttl=63 time=0.628 ms
+136 bytes from 192.214.2.2: icmp_seq=35 ttl=63 time=0.665 ms
+136 bytes from 192.214.2.2: icmp_seq=36 ttl=63 time=0.526 ms
+136 bytes from 192.214.2.2: icmp_seq=37 ttl=63 time=0.573 ms
+136 bytes from 192.214.2.2: icmp_seq=38 ttl=63 time=0.587 ms
+136 bytes from 192.214.2.2: icmp_seq=39 ttl=63 time=0.480 ms
+136 bytes from 192.214.2.2: icmp_seq=40 ttl=63 time=0.641 ms
+136 bytes from 192.214.2.2: icmp_seq=41 ttl=63 time=0.511 ms
+136 bytes from 192.214.2.2: icmp_seq=42 ttl=63 time=0.528 ms
+136 bytes from 192.214.2.2: icmp_seq=43 ttl=63 time=0.591 ms
+136 bytes from 192.214.2.2: icmp_seq=44 ttl=63 time=0.536 ms
+136 bytes from 192.214.2.2: icmp_seq=45 ttl=63 time=0.616 ms
+136 bytes from 192.214.2.2: icmp_seq=46 ttl=63 time=0.467 ms
+136 bytes from 192.214.2.2: icmp_seq=47 ttl=63 time=0.447 ms
+136 bytes from 192.214.2.2: icmp_seq=48 ttl=63 time=0.286 ms
+136 bytes from 192.214.2.2: icmp_seq=49 ttl=63 time=0.422 ms
+136 bytes from 192.214.2.2: icmp_seq=50 ttl=63 time=0.402 ms
+136 bytes from 192.214.2.2: icmp_seq=51 ttl=63 time=0.424 ms
+136 bytes from 192.214.2.2: icmp_seq=52 ttl=63 time=0.465 ms
+136 bytes from 192.214.2.2: icmp_seq=53 ttl=63 time=0.390 ms
+136 bytes from 192.214.2.2: icmp_seq=54 ttl=63 time=0.471 ms
+136 bytes from 192.214.2.2: icmp_seq=55 ttl=63 time=0.478 ms
+136 bytes from 192.214.2.2: icmp_seq=56 ttl=63 time=0.389 ms
+136 bytes from 192.214.2.2: icmp_seq=57 ttl=63 time=0.455 ms
+136 bytes from 192.214.2.2: icmp_seq=58 ttl=63 time=0.499 ms
+136 bytes from 192.214.2.2: icmp_seq=59 ttl=63 time=0.539 ms
+136 bytes from 192.214.2.2: icmp_seq=60 ttl=63 time=0.375 ms
+136 bytes from 192.214.2.2: icmp_seq=61 ttl=63 time=0.715 ms
+136 bytes from 192.214.2.2: icmp_seq=62 ttl=63 time=0.654 ms
+136 bytes from 192.214.2.2: icmp_seq=63 ttl=63 time=0.559 ms
+136 bytes from 192.214.2.2: icmp_seq=64 ttl=63 time=0.521 ms
+136 bytes from 192.214.2.2: icmp_seq=65 ttl=63 time=0.579 ms
+136 bytes from 192.214.2.2: icmp_seq=66 ttl=63 time=0.710 ms
+136 bytes from 192.214.2.2: icmp_seq=67 ttl=63 time=0.595 ms
+136 bytes from 192.214.2.2: icmp_seq=68 ttl=63 time=0.718 ms
+136 bytes from 192.214.2.2: icmp_seq=69 ttl=63 time=1.27 ms
+136 bytes from 192.214.2.2: icmp_seq=70 ttl=63 time=0.778 ms
+136 bytes from 192.214.2.2: icmp_seq=71 ttl=63 time=0.716 ms
+136 bytes from 192.214.2.2: icmp_seq=72 ttl=63 time=0.723 ms
+136 bytes from 192.214.2.2: icmp_seq=73 ttl=63 time=0.663 ms
+136 bytes from 192.214.2.2: icmp_seq=74 ttl=63 time=0.639 ms
+136 bytes from 192.214.2.2: icmp_seq=75 ttl=63 time=0.582 ms
+136 bytes from 192.214.2.2: icmp_seq=76 ttl=63 time=0.753 ms
+136 bytes from 192.214.2.2: icmp_seq=77 ttl=63 time=0.520 ms
+
+--- 192.214.2.2 ping statistics ---
+77 packets transmitted, 77 received, 0% packet loss, time 25623ms
+rtt min/avg/max/mdev = 0.272/0.570/1.273/0.167 ms
+```
+
+Berdasarkan hasil pengujian, seluruh 77 paket yang dikirimkan dari Knights mendapatkan balasan dari Chisa. Tidak terdapat paket yang hilang selama pengujian, sehingga diperoleh packet loss sebesar 0%. Hal ini menunjukkan bahwa seluruh paket ICMP berhasil mencapai tujuan dan mendapatkan response dari node Chisa.
+
+Hasil akhir pengujian menunjukkan statistik RTT sebagai berikut:
+
+| Parameter      |        Hasil |
+| -------------- | -----------: |
+| Paket dikirim  |           77 |
+| Paket diterima |           77 |
+| Packet loss    |          *0% |
+| RTT minimum    |     0,272 ms |
+| RTT rata-rata  |     0,570 ms |
+| RTT maksimum   |     1,273 ms |
+| Mdev           |     0,167 ms |
+
+Nilai RTT menunjukkan waktu yang dibutuhkan sebuah paket untuk melakukan perjalanan dari Knights menuju Chisa dan kembali lagi ke Knights. Nilai rata-rata sebesar 0,570 ms, memperlihatkan bahwa komunikasi antara kedua node berlangsung dengan waktu respons yang rendah. RTT terendah yang tercatat adalah 0,272 ms, sedangkan RTT tertinggi adalah 1,273 ms. Perbedaan antara nilai minimum dan maksimum menunjukkan adanya sedikit variasi waktu respons selama pengujian, tetapi tidak menyebabkan terjadinya packet loss.
+
+Untuk memverifikasi komunikasi ICMP secara langsung, dilakukan packet capture menggunakan Wireshark pada interface node Knights. Paket kemudian difilter menggunakan `icmp`
+
+![alt text](image-46.png)
+
+
+
+Hasil capture menunjukkan adanya dua jenis paket utama, yaitu Echo Request dan Echo Reply.
+
+Pada paket Echo Request, Knights mengirimkan permintaan ICMP menuju Chisa. Paket tersebut memiliki nilai:
+
+```text
+ICMP Type: 8
+Code: 0
+Source: 192.214.3.2
+Destination: 192.214.2.2
+```
+
+ICMP Type 8 menunjukkan bahwa paket merupakan Echo Request, sedangkan Code 0 menunjukkan bahwa paket tersebut menggunakan kode standar untuk Echo Request.
+
+Sebaliknya, ketika Chisa menerima request tersebut, Chisa memberikan balasan kepada Knights dalam bentuk Echo Reply dengan nilai:
+
+```text
+ICMP Type: 0
+Code: 0
+Source: 192.214.2.2
+Destination: 192.214.3.2
+```
+
+ICMP Type 0 menunjukkan bahwa paket merupakan Echo Reply, sedangkan Code*0 merupakan kode standar untuk Echo Reply.
+
+Command yang digunakan menentukan ukuran payload ICMP sebesar 128 bytes melalui parameter `-s 128`. Pada hasil `ping`, sistem menampilkan:
+
+```text
+136 bytes from 192.214.2.2
+```
+
+Nilai 136 bytes tersebut merupakan gabungan dari 128 bytes payload ICMP dan 8 bytes header ICMP. Dengan demikian, ukuran payload yang dikirim sesuai dengan konfigurasi pengujian, yaitu 128 bytes.
+
+Berdasarkan pengujian dan hasil packet capture Wireshark, koneksi antara Knights (`192.214.3.2`) dan Chisa (`192.214.2.2`) berhasil berjalan dengan baik selama pengiriman 77 paket ICMP. Seluruh paket mendapatkan response sehingga diperoleh 0% packet loss. RTT yang tercatat memiliki nilai minimum 0,272 ms, rata-rata 0,570 ms, dan maksimum 1,273 ms. Pada Wireshark, paket Echo Request teridentifikasi dengan Type 8, Code 0, sedangkan Echo Reply memiliki Type 0, Code 0.
+
+### 11 - Pembuktian Kelemahan Protokol Telnet
+
+Buktikan kelemahan protokol Telnet dengan membuat akun phantom_user dan password wired_ghost pada layanan telnetd di node Chisa. Lakukan login Telnet dari node Eiri ke node Chisa dan tangkap sesi menggunakan Wireshark. Tunjukkan kredensial plain text melalui fitur Follow TCP Stream, serta jelaskan mengapa setiap karakter terkirim dalam paket TCP terpisah.
+
+
