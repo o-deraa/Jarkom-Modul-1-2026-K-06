@@ -1286,9 +1286,9 @@ Setelah proses key exchange selesai, seluruh data sesi terlihat sebagai karakter
 Berbeda dengan Telnet yang mengirimkan seluruh data termasuk username dan password dalam bentuk plaintext, SSH tidak menampilkan kredensial apapun yang dapat terbaca pada hasil Follow TCP Stream. Pada konfigurasi ini, autentikasi dilakukan menggunakan mekanisme public key authentication, sehingga password login memang tidak dikirimkan melalui jaringan sama sekali. Mika membuktikan kepemilikan private key `id_ed25519`, sementara Knights memverifikasinya menggunakan public key yang tersimpan di file `authorized_keys`. Proses autentikasi tersebut pun berlangsung di dalam saluran komunikasi yang telah terenkripsi, sehingga tidak dapat diamati melalui packet capture.
 
 
-### 14 - 
+### 14 - DDoS
 
-Setelah gagal mengakses FTP, Eiri melancarkan serangan brute-force terhadap form login web Alice. Analisis file capture wired_bruteforce.pcapng untuk mengidentifikasi alamat IP penyerang, target IP beserta port yang diserang, password user lain_admin yang berhasil ditembus, serta web server software dan versi yang dilaporkan pada response header. Validasi temuan kalian pada socket server: nc [IP_Group] 3401 
+Setelah gagal mengakses FTP, Eiri melancarkan serangan brute-force terhadap form login web Alice. Analisis file capture wired_bruteforce.pcapng untuk mengidentifikasi alamat IP penyerang, target IP beserta port yang diserang, password user lain_admin yang berhasil ditembus, serta web server software dan versi yang dilaporkan pada response header.
 
 Pertama - tama, file dibuka di wireshark. Untuk mengidentifikasi aktivitas login, diterapkan display filter berikut:
 
@@ -1341,4 +1341,253 @@ Berikut adalah validasi jika jawaban sudah benar:
 
 ### 15 - 
 
-### 16 - 
+### 16 - FTP Theft
+
+Eiri meletakkan file malware di server. Dari file capture wired_ftp_theft.pcap, lakukan analisis lalu lintas FTP untuk mengidentifikasi alamat IP server FTP penyerang, banner software FTP yang digunakan, kredensial login penyerang, serta ukuran (size in bytes) dari file malware knights_payload.exe yang diunduh.
+
+Pertama - tama, file di-downlaod dan dibuka di wireshark.
+
+![alt text](image-77.png)
+![alt text](image-78.png)
+
+Selanjutnya, dilakukan analisis menggunakan fitur Follow TCP Stream pada packet nomor 90 yang mengandung kata "knights_payload". Hasil analisis menunjukkan adanya proses autentikasi ke FTP Server, kemudian pengunduhan file knights_payload.exe.
+
+Hasil follow TCP Stream:
+
+```bash
+220 Welcome to Wired FTP Server (vsftpd 3.0.5)
+
+USER knights_agent
+
+331 Please specify the password.
+
+PASS N4v1_s3cur3_2026
+
+230 Login successful.
+
+PWD
+
+257 "/" is the current directory
+
+TYPE I
+
+200 Switching to Binary mode.
+
+SIZE knights_payload.exe
+
+213 524288
+
+PASV
+
+227 Entering Passive Mode (198,51,100,7,156,64).
+
+RETR knights_payload.exe
+
+150 Opening BINARY mode data connection for knights_payload.exe (524288 bytes).
+226 Transfer complete.
+
+QUIT
+
+221 Goodbye.
+```
+
+| Pertanyaan | Jawaban  |
+| ---------- | -------- |
+| IP Server FTP penyerang | 190.51.100.7`|
+| Banner software FTP yang digunakan | `vsftpd 3.0.5`|
+| Kredensial login penyerang | `USER knights_agent` `PASS N4v1_s3cur3_2026` |
+| Ukuran (bytes) file malware `knights_payload.exe` | `524288 bytes` |
+
+
+Berikut adalah validasi jika jawaban sudah benar:
+![alt text](image-79.png)
+
+### 17 - HTTP C2
+Alice membuat halaman web di node-nya. Eiri memanfaatkan celah untuk mengunduh payload berbahaya ke sistem Alice. Analisis file capture wired_http_c2.pcap untuk mengidentifikasi nama domain (Host) tempat malware diunduh, alamat IP server penyerang, nama file executable malware yang diunduh, serta kode status HTTP yang dikembalikan. 
+
+Pertama - tama, file di-downlaod dan dibuka di wireshark.
+
+![alt text](image-80.png)
+![alt text](image-81.png)
+
+Berdasarkan analisis dari gambar, diperoleh hasil sebagai berikut:
+
+| Pertanyaan | Jawaban |
+|------------|---------|
+| Nama domain (host) tempat malware diunduh | wired-update.net |
+| Alamat IP server penyerang | 203.0.113.42 |
+| Nama file exe malware yang diunudh | navi_agent.exe |
+| Kode status HTTP yagn dikembalikan | 200 OK|
+
+Berikut adalah validasi jika jawaban sudah benar:
+![alt text](image-82.png)
+
+### 18 - SMB Transfer
+
+Eiri mengubah taktik penyerangan dengan menanamkan file malware menggunakan protokol file sharing SMB. Analisis file capture wired_smb_transfer.pcapng untuk mengidentifikasi nama protokol jaringan yang dieksploitasi, IP pengirim dan penerima, folder tujuan penyimpanan malware pada sistem korban, serta nama file executable malware yang ditransfer.
+
+Pertama - tama, file di-downlaod dan dibuka di wireshark.
+
+![alt text](image-83.png)
+![alt text](image-84.png)
+
+Berdasarkan analisis dari gambar, diperoleh hasil sebagai berikut:
+
+| Pertanyaan | Jawaban |
+|------------|---------|
+| Nama protokol jaringan yang dieksploitasi | SMB2 |
+| IP Pengirim 10.7.3.100|
+| IP Penerima |	10.7.1.50|
+| Folder tujuan penyimpanan malware pada sistem korban |System32|
+| Nama file executable malware yang ditransfer | wired_trojan_payload.exe |
+
+Berikut adalah validasi jika jawaban sudah benar:
+
+![alt text](image-85.png)
+
+### 19 - SMTP Threat
+Eiri meneror jaringan dengan mengirimkan email pemerasan melalui protokol SMTP tanpa enkripsi. Analisis file capture wired_smtp_threat.pcap pada stream TCP terkait, identifikasi alamat email korban yang ditargetkan, password korban yang diklaim bocor oleh penyerang, jenis malware yang diinfeksikan, batas waktu (dalam hari) yang diberikan, serta MailClientID yang tercantum pada pesan.
+
+
+Pertama - tama, file di-downlaod dan dibuka di wireshark.
+
+![alt text](image-86.png)
+![alt text](image-88.png)
+![alt text](image-90.png)
+
+Hasil analisis menggunakan fitur Follow TCP Stream pada packet nomor 86 yang mengandung kata "password":
+
+```bash
+220 mail.protocol7.co.jp ESMTP Postfix
+
+EHLO darkwired.net
+
+250-mail.protocol7.co.jp Hello
+
+MAIL FROM:<attacker@darkwired.net>
+
+250 2.1.0 Ok
+
+RCPT TO:<victim@protocol7.co.jp>
+
+250 2.1.5 Ok
+
+DATA
+
+354 End data with <CR><LF>.<CR><LF>
+
+From: attacker@darkwired.net
+To: victim@protocol7.co.jp
+Subject: URGENT: Your Wired account has been compromised
+Date: Thu, 10 Sep 2026 09:00:00 +0700
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+I have compromised your system through Protocol 7.
+
+I know that: pr0tocol_7_user - is your password!
+
+Your computer was infected with my private ransomware.
+I have access to all your files, emails, and The Wired accounts.
+I recorded everything through your NAVI terminal.
+
+If you do not pay me 2 BTC to the following address:
+bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
+
+I give you 72 hours (3 days) to get the bitcoins and pay.
+After that, I will release everything to The Wired.
+
+Do not try to contact the Knights. They cannot help you.
+Let's all love Lain.
+
+MailClientID: 7719980706
+.
+
+
+250 2.0.0 Ok: queued
+
+QUIT
+
+221 2.0.0 Bye
+
+```
+
+Berdasarkan analisis dari gambar, diperoleh hasil sebagai berikut:
+
+| Pertanyaan | Jawaban |
+|------------|---------|
+| Alamat email korban | victim@protocol7.co.jp |
+| Password korban yang diklaim bocor | pr0tocol_7_user |
+| Jenis malware yang diinfeksikan | Ransomware |
+| Batas waktu (dalam hari) yang diberikan | 3 |
+| MailClientID yang tercantum pada pesan | 7719980706 |
+
+Berikut adalah validasi jika jawaban sudah benar:
+
+![alt text](image-89.png)
+
+### 20 - TLS Decrypt
+
+Untuk rencana pamungkasnya, Eiri menyembunyikan komunikasi malware di balik saluran terenkripsi TLS. Namun Alice telah menyediakan file keylog untuk mendekripsi lalu lintas data tersebut. Analisis file capture wired_tls_decrypt.pcapng bersama keyslogfile.txt untuk mengidentifikasi versi protokol TLS yang dinegosiasikan, nama domain (SNI) yang diakses, alamat IP server HTTPS penyerang, User-Agent yang digunakan, serta HTTP request method dan path yang tersembunyi di dalam sesi dekripsi.
+
+Pertama-tama, file di-download dan di-unzip. Terdapat dua file di dalamnya, yaitu file capture Wireshark` wired_tls_decrypt.pcapng` dan file kunci `keyslogfile.txt`.
+
+![alt text](image-92.png)
+
+Isi dari file wireshark wired_tls_decrypt.pcapng
+
+![alt text](image-91.png)
+
+Isi dari file `keyslogfile.txt`
+
+```text
+CLIENT_RANDOM f67a28b386b31c620d76c0026fdd9888edbe6bf0f5b715b2caca158f84ae9d66 cc38e78182b9dfd74ef3103d79bbc99cfc9b4dad209ed209062b5481e63353128da7571b13cfd4d3a5ae7d0520fb346d
+
+```
+File `keyslogfile.txt` berisi nilai `CLIENT_RANDOM` yang digunakan untuk mendekripsi sesi TLS. Untuk memuat file kunci tersebut ke Wireshark, dilakukan langkah berikut:
+Buka Edit -> Preferences -> Protocols -> TLS, kemudian pada field Pre-Master-Secret log filename arahkan ke file keyslogfile.txt dan klik OK.
+
+![alt text](image-94.png)
+
+
+![alt text](image-93.png)
+
+Setelah file kunci dimuat, Wireshark secara otomatis mendekripsi sesi TLS. Paket No. 6 dan No. 7 yang sebelumnya tercatat sebagai Application Data berubah menjadi paket HTTP yang dapat dibaca.
+
+Untuk melihat isi lengkap request dan response HTTP, dilakukan Follow → TLS Stream pada salah satu paket tersebut, sehingga diperoleh informasi berikut:
+
+```bash
+HEAD / HTTP/1.1
+Host: example.com
+User-Agent: curl/7.62.0
+Accept: */*
+
+
+HTTP/1.1 200 OK
+Content-Encoding: gzip
+Accept-Ranges: bytes
+Cache-Control: max-age=604800
+Content-Type: text/html; charset=UTF-8
+Date: Sat, 17 Nov 2018 14:24:03 GMT
+Etag: "1541025663"
+Expires: Sat, 24 Nov 2018 14:24:03 GMT
+Last-Modified: Fri, 09 Aug 2013 23:54:35 GMT
+Server: ECS (dca/24CE)
+X-Cache: HIT
+Content-Length: 606
+```
+
+Berdasarkan analisis, diperoleh hasil sebagai berikut:
+
+| Pertanyaan | Jawaban |
+|------------|---------|
+| versi protokol TLS yang dinegosiasikan |TLSv1.2|
+| nama domain (SNI) yang diakses|example.com |
+| IP address server HTTPS| 93.184.216.34|
+| User-Agent yang digunakan |curl/7.62.0|
+| HTTP request method dan path yang tersembunyi di dalam sesi dekripsi ||
+
+
+Berikut adalah validasi jika jawaban sudah benar:
+
+![alt text](image-95.png)
