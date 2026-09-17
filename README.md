@@ -135,7 +135,7 @@ Selanjutnya akan dilakukan tes untuk melakukan ping antar-client.
 
 Hasil tes menunjukkan bahwa semua client sudah berhasil terhubung dan berkomunikasi satu sama lainnya.
 
-### 4 Konfigurasi iptables dan DNS Resolver 
+### 4 - Konfigurasi iptables dan DNS Resolver 
 
 Lain ingin agar setiap Client dapat memiliki kemandirian di The Wired. Oleh karena itu, perlu dilakukan konfigurasi DNS resolver pada setiap client serta konfigurasi NAT dan IP forwarding pada router Lain agar setiap client dapat mengakses internet.
 
@@ -645,7 +645,7 @@ unzip traffic
 
 ![alt text](image-41.png)
 
-Setelah file didownlaod dan di-unzip, ditemukan 1 file baru yakni `knights_report.txt`. File `knights_report` adalah dokumen laporan intelijen yang akan dikirimkan ke FTP Server Chisa,
+Setelah file didownlaod dan di-unzip, ditemukan 1 file baru yakni `knights_report.txt`. File `knights_report.txt` adalah dokumen laporan intelijen yang akan dikirimkan ke FTP Server Chisa,
 
 Setelah file tersedia, node Knights melakukan koneksi ke FTP Server Chisa menggunakan akun `alice`. Alamat IP FTP Server Chisa adalah `192.214.2.2`.
 
