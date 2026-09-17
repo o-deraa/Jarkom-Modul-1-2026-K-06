@@ -14,14 +14,14 @@ Untuk membangun The Wired, Lain (Router) harus membuat tiga Switch, dengan rinci
    - Switch 2 menuju Chisa
    - Switch 3 menuju Knights dan Eiri
 
-![alt text](image.png)
+![alt text](assets/image.png)
 
 <break>
 
 ### 2 - Menghubungkan Lain ke Internet
 Karena The Wired masih terisolasi dari dunia luar, router (Lain) harus dikonfigurasi agar dapat tersambung ke internet. Untuk itu, interface eth0 pada Lain harus dihubungkan dengan NAT. Interface tersebut kemudian dikonfigurasi sebagai DHCP client agar memperoleh alamat IP secara otomatis dari NAT.
    
-![alt text](image-1.png)
+![alt text](assets/image-1.png)
 
 Konfigurasi yagn dimasukkan ke `/etc/network/interfaces` adalah sebagai berikut:
 
@@ -31,14 +31,14 @@ iface eth0 inet dhcp
         hostname alpinet-1
 ```
 
-![alt text](image-2.png)
+![alt text](assets/image-2.png)
 
 Konfigurasi `iface eth0 inet dhcp` membuat interface `eth0` menggunakan DHCP sehingga alamat IP dan konfigurasi jaringan dapat diperoleh secara otomatis dari NAT. Sementara itu, `auto eth0` memastikan interface tersebut diaktifkan secara otomatis ketika konfigurasi jaringan dijalankan.
 
 
 Setelah konfigurasi diterapkan, dilakukan pengujian konektivitas menggunakan `ping` untuk memastikan bahwa Lain telah dapat terhubung ke jaringan luar.
 
-![alt text](image-4.png)
+![alt text](assets/image-4.png)
 
 Tes menunjukkan bahwa Lain sudah berhasil terkoneksi dengan internet melalu NAT.
 
@@ -51,11 +51,11 @@ Prefix IP untuk kelompok 6 adalah `192.214.x.x`, sehingga pembagian IP untuk set
 - Switch 2: 192.214.2.1 (terhubung dengan eth2)
 - Switc 3: 192.214.3.1 (terhubung dengan eth3)
 
-![alt text](image-5.png)
+![alt text](assets/image-5.png)
 
 Setelah konfigurasi selesai, dilakukan tes menggunakan command `ip a ` untuk memastikan bahwa setiap interface telah memperoleh alamat IP sesuai dengan konfigurasi yang telah ditetapkan.
 
-![alt text](image-6.png)
+![alt text](assets/image-6.png)
 
 Hasil tes menunjukkan bahwa `eth1`, e`th2, dan `eth3` masing-masing telah memiliki alamat IP `192.214.1.1/24`, `192.214.2.1/24`, dan `192.214.3.1/24`, sehingga konfigurasi pada setiap interface router telah berhasil dilakukan.
 
@@ -71,7 +71,7 @@ Setelah switch dikonfigurasi, selanjutnya adalah memberikan alamat IP untuk seti
         gateway 192.214.1.1
     ```
 
-    ![alt text](image-7.png)
+    ![alt text](assets/image-7.png)
 
 
 
@@ -84,7 +84,7 @@ Setelah switch dikonfigurasi, selanjutnya adalah memberikan alamat IP untuk seti
         netmask 255.255.255.0
         gateway 192.214.1.1
     ```
-    ![alt text](image-8.png)
+    ![alt text](assets/image-8.png)
 
 - Chisa
 
@@ -95,7 +95,7 @@ Setelah switch dikonfigurasi, selanjutnya adalah memberikan alamat IP untuk seti
         netmask 255.255.255.0
         gateway 192.214.2.1
     ```
-    ![alt text](image-9.png)
+    ![alt text](assets/image-9.png)
 
 - Knights
     ```bash
@@ -106,7 +106,7 @@ Setelah switch dikonfigurasi, selanjutnya adalah memberikan alamat IP untuk seti
         gateway 192.214.3.1
     ```
 
-    ![alt text](image-10.png)
+    ![alt text](assets/image-10.png)
 
 - Eiri
     ```bash
@@ -117,21 +117,21 @@ Setelah switch dikonfigurasi, selanjutnya adalah memberikan alamat IP untuk seti
         gateway 192.214.3.1
     ```
 
-    ![alt text](image-11.png)
+    ![alt text](assets/image-11.png)
 
 Selanjutnya akan dilakukan tes untuk melakukan ping antar-client.
 
 - Alice
-    ![alt text](image-12.png)
+    ![alt text](assets/image-12.png)
 
 - Mika
-    ![alt text](image-13.png)
+    ![alt text](assets/image-13.png)
 - Chisa
-  ![alt text](image-14.png)
+  ![alt text](assets/image-14.png)
 - Knights
-  ![alt text](image-15.png)
+  ![alt text](assets/image-15.png)
 - Eiri
-  ![alt text](image-16.png)
+  ![alt text](assets/image-16.png)
 
 Hasil tes menunjukkan bahwa semua client sudah berhasil terhubung dan berkomunikasi satu sama lainnya.
 
@@ -141,21 +141,21 @@ Lain ingin agar setiap Client dapat memiliki kemandirian di The Wired. Oleh kare
 
 Pertama, dilakukan pengecekan terhadap nameserver yang diperoleh Lain dari NAT melalui file /etc/resolv.conf.
 
-![alt text](image-17.png)
+![alt text](assets/image-17.png)
 
 Berdasarkan hasil pengecekan, nameserver yang digunakan oleh Lain adalah `192.168.122.1`. IP tersebut kemudian ditambahkan ke file `/etc/resolv.conf` pada masing-masing client agar client dapat melakukan DNS resolution.
 
 - Alice
-  ![alt text](image-18.png)
+  ![alt text](assets/image-18.png)
 
 - Mika
-  ![alt text](image-19.png)
+  ![alt text](assets/image-19.png)
 - Chisa
-  ![alt text](image-20.png)
+  ![alt text](assets/image-20.png)
 - Knights
-  ![alt text](image-21.png)
+  ![alt text](assets/image-21.png)
 - Eiri
-  ![alt text](image-22.png)
+  ![alt text](assets/image-22.png)
 
 Setelah konfigurasi DNS resolver pada masing-masing client selesai, tahap selanjutnya adalah mengatur NAT pada router Lain menggunakan `iptables`. Pada node Lain, `iptables` telah tersedia sehingga tidak diperlukan instalasi tambahan. Rule NAT ditambahkan menggunakan command berikut:
 
@@ -176,15 +176,15 @@ Konfigurasi tersebut memungkinkan Lain berfungsi sebagai router yang meneruskan 
 Setelah semua hal di atas dilakukan, kemudian dicek apakah setiap client sudah berhasil terhubung ke internet atau belum dengan cara melakukan command`ping` ke google.com.
 
 - Alice
-  ![alt text](image-23.png)
+  ![alt text](assets/image-23.png)
 - Mika
-  ![alt text](image-24.png)
+  ![alt text](assets/image-24.png)
 - Chisa
-  ![alt text](image-25.png)
+  ![alt text](assets/image-25.png)
 - Knights
-  ![alt text](image-26.png)
+  ![alt text](assets/image-26.png)
 - Eiri
-  ![alt text](image-27.png)
+  ![alt text](assets/image-27.png)
  
  Tes di atas menunjukkan bahwa setiap client berhasil memperoleh response dari google.com. Hal tersebut menunjukkan bahwa konfigurasi DNS resolver, NAT, dan IP forwarding telah berhasil sehingga setiap client dapat terhubung ke internet melalui router Lain.
 
@@ -203,7 +203,7 @@ Perintah tersebut digunakan untuk menampilkan Process ID (PID), Parent Process I
 
 Hasil pemeriksaan pada Router Lain adalah:
 
-![alt text](image-28.png)
+![alt text](assets/image-28.png)
 
 Berdasarkan hasil tersebut, dapat diketahui bahwa proses utama container menjalankan `/bin/sh /etc/alpinet-init.sh`dengan PID 83. Proses tersebut kemudian menjalankan Bash dengan PID 84 yakni bash `-i -l`. Parameter -i menunjukkan bahwa Bash dijalankan sebagai interactive shell, sedangkan parameter -l menunjukkan bahwa Bash dijalankan sebagai login shell.
 
@@ -229,7 +229,7 @@ iptables -t nat -D POSTROUTING -o eth0 -s 192.214.0.0/16 -j MASQUERADE
 
 Kemudian dicek menggunakan command `iptables -t nat -L POSTROUTING -n -v` dan diperoleh hasil sebagai berikut.
 
-![alt text](image-29.png)
+![alt text](assets/image-29.png)
 
 Pengecekan tabel NAT menunjukkan bahwa rule MASQUERADE sudah tidak tersedia
 
@@ -241,9 +241,9 @@ bash -i -l
 
 Setelah Bash login dijalankan, tabel NAT diperiksa kembali dan diperoleh hasil sebagai berikut.
 
-![alt text](image-30.png)
+![alt text](assets/image-30.png)
 
-![alt text](image-31.png)
+![alt text](assets/image-31.png)
 
 Hasilnya menunjukkan rule MASQUERADE kembali tersedia dan membuktikan bahwa konfigurasi pada `/root/.bash_profile` berhasil dijalankan ketika Bash login shell dimulai. IP forwarding juga diperiksa dan mengembalikan angka `1` yagn menandakan bahwa IP forwarding telah aktif.
 
@@ -379,9 +379,9 @@ unzip traffic_protocol7.zip
 ```
 
 
-![alt text](image-32.png)
+![alt text](assets/image-32.png)
 
-![alt text](image-33.png)
+![alt text](assets/image-33.png)
 
 Setelah file diunduh dan diekstrak, ditemukan file bernama `traffic_protocol7.sh`. Setelah itu, file dijalankan di dalam node Mika dengan cara:
 
@@ -391,17 +391,17 @@ bash traffic_protocol7.shh
 
 File lalu akan membanjiri jaringan di node Mika dengan banyak paket. Untuk mengecek paket yang masuk menggunakan wireshark, digunakan caputring antara connecting line Mika dan switch 1.
 
-![alt text](image-34.png)
+![alt text](assets/image-34.png)
 
 Di dalam wireshark akan terlihat jelas semua paket yang masuk tadi. 
 
-![alt text](image-35.png)
+![alt text](assets/image-35.png)
 
 Gambar menunjukkan sesi capture Wireshark pada interface `Switch1 Ethernet2 to Mika eth0 `tanpa display filter aktif, sehingga seluruh jenis protokol tertampil apa adanya. Paket yang terlihat didominasi oleh traffic ICMP berupa aktivitas ping berulang dari host `192.214.1.3` ke dua tujuan yaitu `8.8.8.8` (Google DNS) dan `1.1.1.1` (Cloudflare), dengan sequence number yang terus bertambah mulai dari seq 3/768 hingga seq 5/1280 dan semua mendapat balasan *reply* yang sukses. Di penghujung capture, muncul empat paket ARP pada timestamp sekitar 5.40 detik, di mana dua perangkat dengan MAC `02:42:d7:22:4b:01` dan `02:42:29:1f:8f:00` saling bertukar informasi untuk memetakan alamat IP `192.214.1.3` dan `192.214.1.1` ke alamat MAC masing-masing, yang merupakan proses resolusi alamat yang umum terjadi di jaringan lokal.
 
 Untuk  menyaring paket yang berprotokol DNS atau ICMP, cukup mengetikkan `dns || icmp` pada display filter, sehingga diperoleh hasil sebagai berikut:
 
-![alt text](image-36.png)
+![alt text](assets/image-36.png)
 
 Wireshark hanya menampilkan paket yang termasuk protokol DNS atau ICMP, menyembunyikan seluruh traffic lain seperti ARP, TCP, maupun protokol lainnya dari tampilan. Dari keseluruhan sesi capture, terdapat 18 paket yang berhasil lolos filter — terdiri dari 10 paket DNS dan 8 paket ICMP.
 
@@ -415,7 +415,7 @@ Chisa memutuskan mendirikan FTP Server pada node miliknya dengan menggunakan /`v
 apk add vsftpd
 ```
 
-![alt text](image-37.png)
+![alt text](assets/image-37.png)
 
 Setelah package FTP terpasang,` /sbin/nologin` didaftarkan ke `/etc/shells`. Shell ini digunakan pada akun FTP agar user dapat digunakan untuk autentikasi FTP tanpa memberikan akses ke interactive shell pada sistem.
 
@@ -618,16 +618,16 @@ lftp -u alice,alice123 192.214.2.2
 put signal_alice.txt
 exit
 ```
-![alt text](image-38.png)
+![alt text](assets/image-38.png)
 
 Selanjutnya dilakukan verifikasi pada server FTP milik Chisa.
 
-![alt text](image-39.png)
+![alt text](assets/image-39.png)
 
 Hasil tersebut menunjukkan bahwa `signal_alice.txt` berhasil tersimpan pada shared folder, sehingga dapat dibuktikan bahwa user `alice` memiliki hak akses read & write.
 
 Eiri
-![alt text](image-40.png)
+![alt text](assets/image-40.png)
 
 Pesan `530 Permission denied` menunjukkan bahwa autentikasi FTP untuk user eiri ditolak oleh server. Hal tersebut terjadi karena konfigurasi menggunakan `userlist_deny=NO`, sehingga hanya user yang tercantum pada `/etc/vsftpd.user_list`, yaitu alice dan mika, yang diizinkan melakukan login ke FTP Server.
 
@@ -643,7 +643,7 @@ gdown "https://drive.google.com/file/d/1lFepK4wFmx55PnRki3NsHW-ivudSR0vg/view?us
 unzip traffic
 ```
 
-![alt text](image-41.png)
+![alt text](assets/image-41.png)
 
 Setelah file didownlaod dan di-unzip, ditemukan 1 file baru yakni `knights_report.txt`. File `knights_report.txt` adalah dokumen laporan intelijen yang akan dikirimkan ke FTP Server Chisa,
 
@@ -665,14 +665,14 @@ Setelah koneksi FTP berhasil dibuat, file` knights_report.txt` dikirimkan ke ser
 put knights_report.txt
 ```
 
-![alt text](image-42.png)
+![alt text](assets/image-42.png)
 
 Berdasarkan hasil pada terminal, proses transfer `knights_report.txt` berhasil dilakukan dari node Knights menuju FTP Server Chisa. Untuk memastikan bahwa file benar-benar telah tersimpan pada server, dilakukan verifikasi secara langsung pada node Chisa.
 
 ```bash
 ls -lh /var/wired/data
 ```
-![alt text](image-43.png)
+![alt text](assets/image-43.png)
 
 Hasil verifikasi menunjukkan bahwa file `knights_report.txt` telah terdapat di dalam direktori `/var/wired/data` pada node Chisa. Hal tersebut membuktikan bahwa file yang dikirim dari Knights berhasil diterima dan disimpan oleh FTP Server.
 
@@ -680,8 +680,8 @@ Hasil verifikasi menunjukkan bahwa file `knights_report.txt` telah terdapat di d
 Selama proses transfer berlangsung, trafik jaringan antara Knights dan FTP Server Chisa ditangkap menggunakan Wireshark. Capture kemudian dianalisis untuk mengidentifikasi tahapan komunikasi FTP, khususnya proses negosiasi passive mode dan transfer file.
 
 Hasil wireshark
-![alt text](image-44.png)
-![alt text](image-45.png)
+![alt text](assets/image-44.png)
+![alt text](assets/image-45.png)
 
 Analisis trafik dilakukan menggunakan Wireshark pada koneksi antara node Knights sebagai FTP Client dengan node Chisa sebagai FTP Server. Node Knights menggunakan alamat IP `192.214.3.2`, sedangkan FTP Server Chisa menggunakan alamat IP `192.214.2.2`. Koneksi dilakukan menggunakan akun `alice` untuk mengunggah file `knights_report.txt`.
 
@@ -768,7 +768,7 @@ wget --no-check-certificate \
 unzip Protokol_Tujuh
 ```
 
-![alt text](image-69.png)
+![alt text](assets/image-69.png)
 
 Setelah proses ekstraksi selesai, didapatkan file `protocol7_manifesto.txt`. Selanjutnya, file tersebut dipindahkan ke dalam direktori yang digunakan sebagai folder server FTP Chisa, yaitu `/var/wired/data/`.
 
@@ -776,7 +776,7 @@ Setelah proses ekstraksi selesai, didapatkan file `protocol7_manifesto.txt`. Sel
  cp protocol7_manifesto.txt /var/wired/data/
 ```
 
-![alt text](image-70.png)
+![alt text](assets/image-70.png)
 
 File berhasil dipindahkan ke dalam folder server FTP.
 
@@ -788,7 +788,7 @@ get protocol7_manifesto.txt
 
 ```
 
-![alt text](image-71.png)
+![alt text](assets/image-71.png)
 
 File berhasil diunduh oleh Mika. Hal ini menunjukkan bahwa akun mika memiliki hak akses `read` terhadap file pada FTP Server Chisa.
 
@@ -799,7 +799,7 @@ echo "Test  Mika" > test_mika.txt
  put test_mika.txt
 ```
 
-![alt text](image-72.png)
+![alt text](assets/image-72.png)
 
 Upload file ditolak oleh FTP Server dengan pesan `550 Permission denied`. Hal ini menunjukkan bahwa akun mika tidak memiliki hak akses write, sehingga akun tersebut hanya dapat membaca atau mengunduh file dari FTP Server Chisa.
 
@@ -920,7 +920,7 @@ Nilai RTT menunjukkan waktu yang dibutuhkan sebuah paket untuk melakukan perjala
 
 Untuk memverifikasi komunikasi ICMP secara langsung, dilakukan packet capture menggunakan Wireshark pada interface node Knights. Paket kemudian difilter menggunakan `icmp`
 
-![alt text](image-46.png)
+![alt text](assets/image-46.png)
 
 
 
@@ -969,7 +969,7 @@ apk update
 apk add busybox-extras
 ```
 
-![alt text](image-47.png)
+![alt text](assets/image-47.png)
 
 Selanjutnya, dibuat akun `phantom_user` yang akan digunakan untuk melakukan autentikasi melalui layanan Telnet. Password yang digunakan adalah` wired_ghost`.
 
@@ -983,24 +983,24 @@ Setelah akun berhasil dibuat, layanan Telnet dijalankan pada port 23 menggunakan
 ```bash
 telnetd -p 23
 ```
-![alt text](image-48.png)
+![alt text](assets/image-48.png)
 
 Command tersebut menjalankan Telnet daemon (`telnetd`) pada port TCP 23 sehingga node Chisa dapat menerima koneksi Telnet dari node lain dalam jaringan. Dengan demikian, Chisa telah berfungsi sebagai Telnet Server yang dapat diakses oleh client.
 
 Selanjutnya, dilakukan pengujian koneksi dari node Eiri menuju node Chisa menggunakan layanan Telnet.
 
-![alt text](image-49.png)
-![alt text](image-50.png)
+![alt text](assets/image-49.png)
+![alt text](assets/image-50.png)
 
 Dari hasil pengujian tersebut, Eiri berhasil terhubung ke Telnet Server pada Chisa dan melakukan login menggunakan akun `phantom_user` dengan password `wired_ghost`. Setelah proses autentikasi berhasil, Eiri memperoleh shell pada node Chisa, yang menunjukkan bahwa koneksi Telnet telah berhasil dilakukan.
 
 Saat Eiri melakukan koneksi Telnet ke Chisa, dilakukan packet capture menggunakan Wireshark. Untuk menyaring traffic yang berkaitan dengan layanan Telnet, digunakan display filter `tcp.port == 23`.
 
-![alt text](image-51.png)
+![alt text](assets/image-51.png)
 
 Selanjutnya, salah satu paket Telnet yang terdeteksi dipilih untuk dianalisis. Pada pengujian ini digunakan packet nomor 38. Kemudian, isi komunikasi dianalisis menggunakan fitur Follow TCP Stream pada Wireshark.
 
-![alt text](image-52.png)
+![alt text](assets/image-52.png)
 
 Hasil analisis menunjukkan bahwa informasi yang dikirim melalui sesi Telnet dapat terlihat dalam bentuk plaintext. Username `phantom_user` dan `password wired_ghost` dapat ditemukan pada hasil komunikasi tersebut. Bahkan, karakter username terlihat dikirim secara bertahap dalam paket-paket TCP berukuran kecil.
 
@@ -1024,7 +1024,7 @@ nohup sh -c "nc -lvkp 22 & nc -lvkp 80 &" > /tmp/test.out 2>&1 &
 
 Command tersebut menjalankan Netcat sebagai listener pada port 22 dan 80 secara background. Opsi `-l` digunakan untuk menjalankan Netcat dalam mode listening, `-v` untuk menampilkan informasi koneksi secara verbose, `-k` agar listener tetap berjalan setelah menerima koneksi, sedangkan `-p `digunakan untuk menentukan nomor port. `nohup` digunakan agar proses tetap berjalan ketika shell ditutup, sementara tanda `& `menjalankan proses secara background.
 
-![alt text](image-53.png)
+![alt text](assets/image-53.png)
 
 Setelah port 22 dan 80 berada dalam kondisi listening, dilakukan pemindaian dari node Alice menggunakan Netcat dengan command berikut:
 
@@ -1038,7 +1038,7 @@ IP 192.214.3.2 merupakan alamat IP node Knights. Opsi `-z` digunakan untuk melak
 
 Hasil pemindaian yang diperoleh adalah:
 
-![alt text](image-54.png)
+![alt text](assets/image-54.png)
 
 Berdasarkan hasil tersebut, port 22 dan 80 berada dalam keadaan terbuka, ditunjukkan oleh pesan `succeeded!` yang berarti Alice berhasil melakukan koneksi TCP ke kedua port tersebut. Sementara itu, port 7777 berada dalam keadaan tertutup, ditunjukkan oleh pesan` Connection refused` karena tidak terdapat layanan yang menerima koneksi pada port tersebut.
 
@@ -1048,7 +1048,7 @@ Setelah melakukan pemindaian port dari node Alice menuju node Knights, dilakukan
 tcp.port == 22 || tcp.port == 80 || tcp.port == 7777
 ```
 
-![alt text](image-55.png)
+![alt text](assets/image-55.png)
 
 Hasil filter menampilkan 15 dari total 30 paket. Traffic yang terdeteksi berasal dari Alice (`192.214.1.2`) menuju Knights (`192.214.3.2`).
 
@@ -1109,7 +1109,7 @@ Pertama-tama dilakukan instalasi OpenSSH pada node Knights.
 apk update
 apk add openssh
 ```
-![alt text](image-56.png)
+![alt text](assets/image-56.png)
 
 Selanjutnya dibuat user `mika_admin` pada node Knights sebagai user yang akan digunakan untuk menerima koneksi SSH. Host key untuk SSH server juga dibuat menggunakan `ssh-keygen -A`.
 
@@ -1117,7 +1117,7 @@ Selanjutnya dibuat user `mika_admin` pada node Knights sebagai user yang akan di
 adduser -D mika_admin
 ssh-keygen -A
 ```
-![alt text](image-57.png)
+![alt text](assets/image-57.png)
 
 Untuk memastikan akun tidak terkunci dapat digunakan oleh SSH, buat password lokal untuk akun tersebut:
 
@@ -1147,7 +1147,7 @@ Untuk memastikan SSH server telah berjalan dan port 22 dalam keadaan listening, 
 ss -lntp | grep ':22'
 ```
 
-![alt text](image-58.png)
+![alt text](assets/image-58.png)
 
 Setelah SSH server pada Knights siap, dilakukan pembuatan pasangan kunci SSH pada node Mika. Pada konfigurasi ini tidak dibuat user `mika_admin` pada Mika karena `mika_admin` merupakan user yang berada pada server Knights. Node Mika menggunakan user yang sedang aktif, yaitu root, untuk menyimpan pasangan kunci SSH pada direktori `/root/.ssh`.
 
@@ -1188,7 +1188,7 @@ Dengan konfigurasi tersebut, direktori .ssh hanya dapat diakses oleh owner, priv
 
 Pada direktori /root/.ssh terdapat dua file hasil pembuatan pasangan kunci SSH.
 
-![ ](image-61.png)
+![ alt text](assets/image-61.png)
 
 
 Selanjutnya public key dari Mika ditampilkan untuk didaftarkan pada server Knights.
@@ -1196,7 +1196,7 @@ Selanjutnya public key dari Mika ditampilkan untuk didaftarkan pada server Knigh
 ```bash
 cat /home/mika_admin/.ssh/id_ed25519.pub
 ```
-![alt text](image-62.png)
+![alt text](assets/image-62.png)
 
 Public key tersebut kemudian disalin secara keseluruhan dan digunakan sebagai public key yang diizinkan untuk user `mika_admin` pada node Knights.
 
@@ -1214,7 +1214,7 @@ nano /home/mika_admin/.ssh/authorized_keys
 
 Public key yang diperoleh dari node Mika kemudian ditempelkan ke dalam file authorized_keys.
 
-![alt text](image-63.png)
+![alt text](assets/image-63.png)
 
 Setelah public key dimasukkan, permission dan ownership file diatur agar sesuai dengan user `mika_admin`.
 
@@ -1230,7 +1230,7 @@ chmod 755 /home/mika_admin
 chown mika_admin:mika_admin /home/mika_admin
 ```
 
-![alt text](image-64.png)
+![alt text](assets/image-64.png)
 
 
 Terakhir, dilakukan koneksi SSH dari node Mika menuju node Knights menggunakan private key yang telah dibuat sebelumnya.
@@ -1239,7 +1239,7 @@ Terakhir, dilakukan koneksi SSH dari node Mika menuju node Knights menggunakan p
 ssh -i /home/mika_admin/.ssh/id_ed25519 mika_admin@192.214.3.2
 ```
 
-![alt text](image-65.png)
+![alt text](assets/image-65.png)
 
 Koneksi tersebut menggunakan private key pada node Mika untuk membuktikan identitas user mika_admin. Karena public key yang sesuai telah terdaftar pada authorized_keys di Knights dan autentikasi password dinonaktifkan, proses login dapat dilakukan tanpa mengirimkan password.
 
@@ -1251,7 +1251,7 @@ ssh -i /home/mika_admin/.ssh/id_ed25519 mika_admin@192.214.3.2
 
 Filter tcp.port == 22 diterapkan pada Wireshark untuk menyaring hanya paket yang berkaitan dengan sesi SSH.
 
-![alt text](image-66.png)
+![alt text](assets/image-66.png)
 
 Pada hasil capture, teridentifikasi dua paket awal yang merupakan bagian dari tahap Protocol Version Exchange, yaitu paket No. 4 dan No. 6.
 
@@ -1269,7 +1269,7 @@ Pada tahap Key Exchange Init, client dan server saling bertukar daftar algoritma
 
 Untuk membuktikan bahwa kredensial tidak dikirimkan dalam bentuk teks terbuka, dilakukan inspeksi menggunakan fitur Follow TCP Stream pada Wireshark dengan mengklik kanan salah satu paket SSH dan memilih Follow → TCP Stream.
 
-![alt text](image-67.png)
+![alt text](assets/image-67.png)
 
 Dari hasil Follow TCP Stream, terlihat dua bagian yang berbeda:
 
@@ -1296,7 +1296,7 @@ Pertama - tama, file dibuka di wireshark. Untuk mengidentifikasi aktivitas login
 frame contains "Login"
 ```
 
-![alt text](image-74.png)
+![alt text](assets/image-74.png)
 
 Dari hasil filter, teridentifikasi bahwa:
 
@@ -1308,7 +1308,7 @@ Dari hasil filter, teridentifikasi bahwa:
 
 Paket tersebut kemudian Salah satu paket kemudian diklik kanan dan dipilih Follow → TCP Stream untuk melihat isi lengkap komunikasi HTTP.
 
-![alt text](image-75.png)
+![alt text](assets/image-75.png)
 
 Berikut adalah isi paket:
 
@@ -1337,9 +1337,54 @@ Dari TCP Stream tersebut ditemukan informasi berikut:
 
 Berikut adalah validasi jika jawaban sudah benar:
 
-![alt text](image-76.png)
+![alt text](assets/image-76.png)
 
-### 15 - 
+### 15 - Usb Keyboard Parser
+
+Eiri menyusup ke ruang server dan memasang perangkat keyboard USB berbahaya pada node Alice. Buka file capture wired_usb_hid.pcap, identifikasi Vendor ID dan Product ID perangkat USB dari deskriptor USB, alamat nomor device USB, serta pesan rahasia yang berhasil dicuri dari keystroke.
+
+Pertama - tama, file di-downlaod dan dibuka di wireshark.
+
+![alt text](assets/image-98.png)
+
+Untuk mengidentifikasi perangkat yang terhubung, diklik paket No. 2 (GET DESCRIPTOR Response DEVICE) dan di-expand bagian DEVICE DESCRIPTOR pada panel bawah.
+
+![alt text](assets/image-99.png)
+
+Perangkat yang teridentifikasi adalah Logitech Keyboard K120, sesuai dengan skenario bahwa Eiri memasang keyboard USB berbahaya pada node Alice.
+![alt textt](assets/image-100.png)
+
+Dari capture terlihat perangkat yang terhubung adalah USB HID, yaitu kelas perangkat yang umum digunakan untuk keyboard, sehingga data komunikasinya kemungkinan berisi keystroke.
+Karena keystroke keyboard dikirim sebagai HID report, data tersebut tidak langsung terbaca sebagai teks dan perlu didekode menggunakan keyboard HID parser.
+
+Setelah setiap HID report diterjemahkan menjadi tombol yang ditekan dan disusun berurutan, barulah pesan rahasia dapat direkonstruksi.
+
+Untuk mengekstrak dan merekonstruksi pesan dari data keystroke yang tercapture, digunakan script CTF-Usb_Keyboard_Parser dengan perintah berikut:
+
+```bash
+git clone https://github.com/shark-asmx/CTF-Usb_Keyboard_Parser
+python3 CTF-Usb_Keyboard_Parser/Usb_Keyboard_Parser.py soal15_wired_usb_hid.pcap
+```
+
+![alt text](assets/image-101.png)
+
+Script tersebut mendekode seluruh data HID keystroke dari paket-paket USB secara berurutan dan merekonstruksi teks yang diketikkan. Diperoleh pesan rahasia:
+
+```
+Wired_Protocol_7_is_alive_2026
+```
+
+Berdasarkan analisis , diperoleh hasil sebagai berikut:
+
+| Pertanyaan | Jawaban |
+|------------|---------|
+| Vendor ID | 0x046d |
+| Product ID |0xc31c |
+| Alamat nomor device USB | 7 |
+| Pesan rahasia  |Wired_Protocol_7_is_alive_2026 |
+
+Berikut adalah validasi jika jawaban sudah benar:
+![alt text](assets/image-102.png)
 
 ### 16 - FTP Theft
 
@@ -1347,8 +1392,8 @@ Eiri meletakkan file malware di server. Dari file capture wired_ftp_theft.pcap, 
 
 Pertama - tama, file di-downlaod dan dibuka di wireshark.
 
-![alt text](image-77.png)
-![alt text](image-78.png)
+![alt text](assets/image-77.png)
+![alt text](assets/image-78.png)
 
 Selanjutnya, dilakukan analisis menggunakan fitur Follow TCP Stream pada packet nomor 90 yang mengandung kata "knights_payload". Hasil analisis menunjukkan adanya proses autentikasi ke FTP Server, kemudian pengunduhan file knights_payload.exe.
 
@@ -1400,15 +1445,15 @@ QUIT
 
 
 Berikut adalah validasi jika jawaban sudah benar:
-![alt text](image-79.png)
+![alt text](assets/image-79.png)
 
 ### 17 - HTTP C2
 Alice membuat halaman web di node-nya. Eiri memanfaatkan celah untuk mengunduh payload berbahaya ke sistem Alice. Analisis file capture wired_http_c2.pcap untuk mengidentifikasi nama domain (Host) tempat malware diunduh, alamat IP server penyerang, nama file executable malware yang diunduh, serta kode status HTTP yang dikembalikan. 
 
 Pertama - tama, file di-downlaod dan dibuka di wireshark.
 
-![alt text](image-80.png)
-![alt text](image-81.png)
+![alt text](assets/image-80.png)
+![alt text](assets/image-81.png)
 
 Berdasarkan analisis dari gambar, diperoleh hasil sebagai berikut:
 
@@ -1420,7 +1465,7 @@ Berdasarkan analisis dari gambar, diperoleh hasil sebagai berikut:
 | Kode status HTTP yagn dikembalikan | 200 OK|
 
 Berikut adalah validasi jika jawaban sudah benar:
-![alt text](image-82.png)
+![alt text](assets/image-82.png)
 
 ### 18 - SMB Transfer
 
@@ -1428,8 +1473,8 @@ Eiri mengubah taktik penyerangan dengan menanamkan file malware menggunakan prot
 
 Pertama - tama, file di-downlaod dan dibuka di wireshark.
 
-![alt text](image-83.png)
-![alt text](image-84.png)
+![alt text](assets/image-83.png)
+![alt text](assets/image-84.png)
 
 Berdasarkan analisis dari gambar, diperoleh hasil sebagai berikut:
 
@@ -1443,7 +1488,7 @@ Berdasarkan analisis dari gambar, diperoleh hasil sebagai berikut:
 
 Berikut adalah validasi jika jawaban sudah benar:
 
-![alt text](image-85.png)
+![alt text](assets/image-85.png)
 
 ### 19 - SMTP Threat
 Eiri meneror jaringan dengan mengirimkan email pemerasan melalui protokol SMTP tanpa enkripsi. Analisis file capture wired_smtp_threat.pcap pada stream TCP terkait, identifikasi alamat email korban yang ditargetkan, password korban yang diklaim bocor oleh penyerang, jenis malware yang diinfeksikan, batas waktu (dalam hari) yang diberikan, serta MailClientID yang tercantum pada pesan.
@@ -1451,9 +1496,9 @@ Eiri meneror jaringan dengan mengirimkan email pemerasan melalui protokol SMTP t
 
 Pertama - tama, file di-downlaod dan dibuka di wireshark.
 
-![alt text](image-86.png)
-![alt text](image-88.png)
-![alt text](image-90.png)
+![alt text](assets/image-86.png)
+![alt text](assets/image-88.png)
+![alt text](assets/image-90.png)
 
 Hasil analisis menggunakan fitur Follow TCP Stream pada packet nomor 86 yang mengandung kata "password":
 
@@ -1524,7 +1569,7 @@ Berdasarkan analisis dari gambar, diperoleh hasil sebagai berikut:
 
 Berikut adalah validasi jika jawaban sudah benar:
 
-![alt text](image-89.png)
+![alt text](assets/image-89.png)
 
 ### 20 - TLS Decrypt
 
@@ -1532,11 +1577,11 @@ Untuk rencana pamungkasnya, Eiri menyembunyikan komunikasi malware di balik salu
 
 Pertama-tama, file di-download dan di-unzip. Terdapat dua file di dalamnya, yaitu file capture Wireshark` wired_tls_decrypt.pcapng` dan file kunci `keyslogfile.txt`.
 
-![alt text](image-92.png)
+![alt text](assets/image-92.png)
 
 Isi dari file wireshark wired_tls_decrypt.pcapng
 
-![alt text](image-91.png)
+![alt text](assets/image-91.png)
 
 Isi dari file `keyslogfile.txt`
 
@@ -1547,10 +1592,10 @@ CLIENT_RANDOM f67a28b386b31c620d76c0026fdd9888edbe6bf0f5b715b2caca158f84ae9d66 c
 File `keyslogfile.txt` berisi nilai `CLIENT_RANDOM` yang digunakan untuk mendekripsi sesi TLS. Untuk memuat file kunci tersebut ke Wireshark, dilakukan langkah berikut:
 Buka Edit -> Preferences -> Protocols -> TLS, kemudian pada field Pre-Master-Secret log filename arahkan ke file keyslogfile.txt dan klik OK.
 
-![alt text](image-94.png)
+![alt text](assets/image-94.png)
 
 
-![alt text](image-93.png)
+![alt text](assets/image-93.png)
 
 Setelah file kunci dimuat, Wireshark secara otomatis mendekripsi sesi TLS. Paket No. 6 dan No. 7 yang sebelumnya tercatat sebagai Application Data berubah menjadi paket HTTP yang dapat dibaca.
 
@@ -1590,4 +1635,4 @@ Berdasarkan analisis, diperoleh hasil sebagai berikut:
 
 Berikut adalah validasi jika jawaban sudah benar:
 
-![alt text](image-95.png)
+![alt text](assets/image-95.png)
