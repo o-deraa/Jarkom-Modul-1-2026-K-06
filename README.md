@@ -638,7 +638,7 @@ Kelompok rahasia Knights perlu mengirimkan dokumen laporan intelijen ke FTP Serv
 Pertama, file harus didownload dan di-unzip terlebih dahulu di dalam node Knights.
 
 ```bash
-gdown "https://drive.google.com/file/d/1lFepK4wFmx55PnRki3NsHW-ivudSR0vg/view?usp=drive_link" -O traffic
+gdown "https://drive.google.com/file/d/1lFepK4wFmx55PnRki3NsHW-ivudSR0vg/view?usp=drive_link" -O laporan
 
 unzip traffic
 ```
@@ -918,4 +918,311 @@ Berdasarkan pengujian dan hasil packet capture Wireshark, koneksi antara Knights
 
 Buktikan kelemahan protokol Telnet dengan membuat akun phantom_user dan password wired_ghost pada layanan telnetd di node Chisa. Lakukan login Telnet dari node Eiri ke node Chisa dan tangkap sesi menggunakan Wireshark. Tunjukkan kredensial plain text melalui fitur Follow TCP Stream, serta jelaskan mengapa setiap karakter terkirim dalam paket TCP terpisah.
 
+Pertama-tama, dilakukan setup layanan Telnet Server pada node Chisa dengan meng-install package `busybox-extras` yang menyediakan utilitas `telnetd`.
 
+```bash
+apk update
+apk add busybox-extras
+```
+
+![alt text](image-47.png)
+
+Selanjutnya, dibuat akun `phantom_user` yang akan digunakan untuk melakukan autentikasi melalui layanan Telnet. Password yang digunakan adalah` wired_ghost`.
+
+```bash
+adduser -D phantom_user
+echo "phantom_user:wired_ghost" | chpasswd
+```
+
+Setelah akun berhasil dibuat, layanan Telnet dijalankan pada port 23 menggunakan command berikut:
+
+```bash
+telnetd -p 23
+```
+![alt text](image-48.png)
+
+Command tersebut menjalankan Telnet daemon (`telnetd`) pada port TCP 23 sehingga node Chisa dapat menerima koneksi Telnet dari node lain dalam jaringan. Dengan demikian, Chisa telah berfungsi sebagai Telnet Server yang dapat diakses oleh client.
+
+Selanjutnya, dilakukan pengujian koneksi dari node Eiri menuju node Chisa menggunakan layanan Telnet.
+
+![alt text](image-49.png)
+![alt text](image-50.png)
+
+Dari hasil pengujian tersebut, Eiri berhasil terhubung ke Telnet Server pada Chisa dan melakukan login menggunakan akun `phantom_user` dengan password `wired_ghost`. Setelah proses autentikasi berhasil, Eiri memperoleh shell pada node Chisa, yang menunjukkan bahwa koneksi Telnet telah berhasil dilakukan.
+
+Saat Eiri melakukan koneksi Telnet ke Chisa, dilakukan packet capture menggunakan Wireshark. Untuk menyaring traffic yang berkaitan dengan layanan Telnet, digunakan display filter `tcp.port == 23`.
+
+![alt text](image-51.png)
+
+Selanjutnya, salah satu paket Telnet yang terdeteksi dipilih untuk dianalisis. Pada pengujian ini digunakan packet nomor 38. Kemudian, isi komunikasi dianalisis menggunakan fitur Follow TCP Stream pada Wireshark.
+
+![alt text](image-52.png)
+
+Hasil analisis menunjukkan bahwa informasi yang dikirim melalui sesi Telnet dapat terlihat dalam bentuk plaintext. Username `phantom_user` dan `password wired_ghost` dapat ditemukan pada hasil komunikasi tersebut. Bahkan, karakter username terlihat dikirim secara bertahap dalam paket-paket TCP berukuran kecil.
+
+Hal tersebut menunjukkan kelemahan utama protokol Telnet, yaitu komunikasi antara client dan server tidak dienkripsi. Akibatnya, pihak yang dapat melakukan packet sniffing pada jalur komunikasi berpotensi memperoleh informasi sensitif seperti username dan password.
+ter juga dapat berada dalam satu segmen TCP tergantung proses buffering dan pengiriman data.
+
+Dengan demikian, hasil pengujian membuktikan bahwa kredensial Telnet dapat diperoleh melalui packet capture karena data autentikasi dikirim dalam plaintext. Hal ini membuat Telnet tidak sesuai digunakan untuk komunikasi yang membutuhkan kerahasiaan data.
+
+
+### 12 - Port Scan
+
+Untuk mensimulasikan kondisi beberapa layanan yang berjalan pada node Knights, terlebih dahulu dibuat koneksi listening pada port 22 dan 80 menggunakan Netcat. Kedua port tersebut digunakan untuk merepresentasikan layanan yang berada dalam keadaan terbuka, sedangkan port 7777 dibiarkan tanpa service sehingga berada dalam keadaan tertutup.
+
+Untuk mensimulasikan kondisi beberapa layanan yang berjalan pada node Knights, terlebih dahulu dibuat koneksi listening pada port 22 dan 80 menggunakan Netcat. Kedua port tersebut digunakan untuk merepresentasikan layanan yang berada dalam keadaan terbuka, sedangkan port 7777 dibiarkan tanpa service sehingga berada dalam keadaan tertutup.
+
+Pada node Knights, command berikut dijalankan.
+
+```bash
+nohup sh -c "nc -lvkp 22 & nc -lvkp 80 &" > /tmp/test.out 2>&1 &
+```
+
+Command tersebut menjalankan Netcat sebagai listener pada port 22 dan 80 secara background. Opsi `-l` digunakan untuk menjalankan Netcat dalam mode listening, `-v` untuk menampilkan informasi koneksi secara verbose, `-k` agar listener tetap berjalan setelah menerima koneksi, sedangkan `-p `digunakan untuk menentukan nomor port. `nohup` digunakan agar proses tetap berjalan ketika shell ditutup, sementara tanda `& `menjalankan proses secara background.
+
+![alt text](image-53.png)
+
+Setelah port 22 dan 80 berada dalam kondisi listening, dilakukan pemindaian dari node Alice menggunakan Netcat dengan command berikut:
+
+```bash
+nc -vz 192.214.3.2 22
+nc -vz 192.214.3.2 80
+nc -vz 192.214.3.2 7777
+```
+
+IP 192.214.3.2 merupakan alamat IP node Knights. Opsi `-z` digunakan untuk melakukan pemeriksaan port tanpa mengirimkan data aplikasi, sedangkan `-v `digunakan untuk menampilkan hasil pemeriksaan secara detail.
+
+Hasil pemindaian yang diperoleh adalah:
+
+![alt text](image-54.png)
+
+Berdasarkan hasil tersebut, port 22 dan 80 berada dalam keadaan terbuka, ditunjukkan oleh pesan `succeeded!` yang berarti Alice berhasil melakukan koneksi TCP ke kedua port tersebut. Sementara itu, port 7777 berada dalam keadaan tertutup, ditunjukkan oleh pesan` Connection refused` karena tidak terdapat layanan yang menerima koneksi pada port tersebut.
+
+Setelah melakukan pemindaian port dari node Alice menuju node Knights, dilakukan analisis packet capture menggunakan Wireshark dengan display filter:
+
+```text
+tcp.port == 22 || tcp.port == 80 || tcp.port == 7777
+```
+
+![alt text](image-55.png)
+
+Hasil filter menampilkan 15 dari total 30 paket. Traffic yang terdeteksi berasal dari Alice (`192.214.1.2`) menuju Knights (`192.214.3.2`).
+
+- Port 80
+
+Pada port 80 terlihat proses three-way handshake sebagai berikut:
+
+```text
+Packet 3: Alice → Knights   [SYN]       37576 → 80
+Packet 4: Knights → Alice   [SYN, ACK]  80 → 37576
+Packet 5: Alice → Knights   [ACK]       37576 → 80
+```
+
+Respons `SYN, ACK` dari Knights menunjukkan bahwa port 80 berada dalam keadaan terbuka dan terdapat layanan yang menerima koneksi pada port tersebut. Setelah handshake selesai, Alice langsung mengakhiri koneksi dengan mengirimkan `FIN, ACK` tanpa melakukan pertukaran data HTTP.
+
+Pada capture juga terlihat beberapa retransmission pada proses penutupan koneksi. Hal tersebut menunjukkan adanya paket ACK yang tidak segera diterima atau tidak terlihat dalam capture, sehingga salah satu sisi melakukan pengiriman ulang paket `FIN, ACK`.
+
+- Port 7777
+
+Untuk port 7777, pola komunikasi yang terlihat adalah:
+
+```text
+Packet 8:  Alice → Knights   [SYN]      60644 → 7777
+Packet 9:  Knights → Alice   [RST, ACK] 7777 → 60644
+
+Packet 12: Alice → Knights   [SYN]      60644 → 7777
+Packet 13: Knights → Alice   [RST, ACK] 7777 → 60644
+```
+
+Berbeda dengan port 80, Knights tidak memberikan `SYN, ACK`, melainkan langsung memberikan `RST, ACK`. Respons tersebut menunjukkan bahwa koneksi TCP ke port 7777 ditolak dan port tersebut berada dalam keadaan tertutup.
+
+Pola ini sesuai dengan hasil pemindaian Netcat sebelumnya yang menghasilkan pesan `Connection refused` ketika Alice mencoba mengakses port 7777.
+
+Port 22
+
+Tidak terdapat paket dengan port 22 pada hasil capture. Oleh karena itu, berdasarkan capture ini hanya dapat disimpulkan bahwa tidak terdapat traffic ke port 22 selama proses capture. Ketiadaan traffic tidak cukup untuk menentukan apakah port 22 terbuka atau tertutup, karena dapat disebabkan oleh proses capture yang tidak merekam koneksi tersebut atau kondisi lain pada saat pengujian.
+
+- Perbedaan TCP Flag
+
+Perbedaan respons TCP antara port terbuka dan port tertutup dapat dirangkum sebagai berikut:
+
+| Kondisi   | Request dari Alice | Response Knights | Makna         |
+| --------- | ------------------ | ---------------- | ------------- |
+| Port 80   | `SYN`              | `SYN, ACK`       | Port terbuka  |
+| Port 7777 | `SYN`              | `RST, ACK`       | Port tertutup |
+
+Pada port terbuka, `SYN, ACK` menunjukkan bahwa target menerima permintaan pembentukan koneksi TCP dan siap melanjutkan proses handshake. Sebaliknya, `RST, ACK` menunjukkan bahwa koneksi tidak dapat dibentuk pada port tersebut, yang pada pengujian ini sesuai dengan kondisi port 7777 yang tidak memiliki layanan listening.
+
+Berdasarkan hasil pemindaian Netcat dan packet capture Wireshark, port 80 berhasil diakses dan menunjukkan respons `SYN, ACK`, sedangkan port 7777 memberikan respons `RST, ACK` dan menghasilkan `Connection refused`.
+
+### 13 - Instalasi SSH
+
+Lain memerintahkan agar administrasi jarak jauh menggunakan SSH secara aman tanpa password. Install OpenSSH server pada node Knights, buat pasangan kunci SSH (ssh-keygen) pada node Mika untuk user `mika_admin`, dan konfigurasikan public key authentication (`PasswordAuthentication no`). Lakukan koneksi SSH dari node Mika ke node Knights, tangkap sesi menggunakan Wireshark, identifikasi paket Protocol Version Exchange dan Key Exchange, serta jelaskan mengapa kredensial tidak terlihat dalam bentuk teks terbuka seperti pada Telnet.
+
+Pertama-tama dilakukan instalasi OpenSSH pada node Knights.
+
+```bash
+apk update
+apk add openssh
+```
+![alt text](image-56.png)
+
+Selanjutnya dibuat user `mika_admin` pada node Knights sebagai user yang akan digunakan untuk menerima koneksi SSH. Host key untuk SSH server juga dibuat menggunakan `ssh-keygen -A`.
+
+```bash
+adduser -D mika_admin
+ssh-keygen -A
+```
+![alt text](image-57.png)
+
+Kemudian dilakukan konfigurasi SSH pada file `/etc/ssh/sshd_config`. Konfigurasi berikut mengaktifkan autentikasi menggunakan public key dan menonaktifkan autentikasi menggunakan password.
+
+```
+echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
+echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config
+```
+
+Konfigurasi `PubkeyAuthentication yes` memungkinkan server menerima autentikasi menggunakan pasangan private key dan public key. Sementara itu, `PasswordAuthentication no` menonaktifkan autentikasi menggunakan password. Dengan demikian, user harus memiliki private key yang sesuai dengan public key yang telah didaftarkan pada server.
+
+SSH server kemudian dijalankan menggunakan:
+
+```
+/usr/sbin/sshd
+```
+
+Untuk memastikan SSH server telah berjalan dan port 22 dalam keadaan listening, dilakukan pengecekan menggunakan:.
+
+```
+ss -lntp | grep ':22'
+```
+
+![alt text](image-58.png)
+
+Setelah SSH server pada Knights siap, dilakukan konfigurasi user `mika_admin` pada node Mika. User tersebut digunakan sebagai identitas client yang akan melakukan koneksi SSH.
+
+```bash
+adduser -D mika_admin
+```
+Kemudian dibuat direktori `.ssh` pada home directory user `mika_admin`.
+
+```bash
+mkdir -p /home/mika_admin/.ssh
+```
+
+Selanjutnya dibuat pasangan kunci SSH menggunakan algoritma `Ed25519`.
+
+```bash
+ssh-keygen -t ed25519 -f /home/mika_admin/.ssh/id_ed25519
+```
+
+Pada proses `ssh-keygen`, lokasi penyimpanan key ditentukan pada `/home/mika_admin/.ssh/id_ed25519`. Passphrase dikosongkan dengan menekan Enter sehingga private key dapat digunakan tanpa memasukkan passphrase tambahan ketika melakukan koneksi SSH.
+
+
+Hasil pembuatan key terdiri dari dua file, yaitu:
+
+- `id_ed25519`: private key yang harus dijaga kerahasiaannya dan tidak boleh diberikan kepada pihak lain.
+- `id_ed25519.pub`:  public key yang dapat didaftarkan pada server SSH.
+
+Permission dan ownership direktori serta file key kemudian diatur agar hanya user mika_admin yang dapat mengakses private key.
+
+```bash
+chown -R mika_admin:mika_admin /home/mika_admin/.ssh 
+chmod 700 /home/mika_admin/.ssh 
+chmod 600 /home/mika_admin/.ssh/id_ed25519 
+chmod 644 /home/mika_admin/.ssh/id_ed25519.pub
+```
+
+Dengan konfigurasi tersebut, direktori `.ssh `hanya dapat diakses oleh owner, private key hanya dapat dibaca dan ditulis oleh `mika_admin`, sedangkan public key dapat dibaca oleh user lain apabila diperlukan.
+
+Pada direktori /home/mika_admin/.ssh terdapat dua file hasil pembuatan pasangan kunci SSH.
+![ ](image-61.png)
+
+
+Selanjutnya public key dari Mika ditampilkan untuk didaftarkan pada server Knights.
+
+```bash
+cat /home/mika_admin/.ssh/id_ed25519.pub
+```
+![alt text](image-62.png)
+
+Public key tersebut kemudian disalin secara keseluruhan dan digunakan sebagai public key yang diizinkan untuk user mika_admin pada node Knights.
+
+Pada node Knights dibuat direktori .ssh untuk user mika_admin.
+
+```bash
+mkdir -p /home/mika_admin/.ssh
+chmod 700 /home/mika_admin/.ssh
+```
+Kemudian dibuat file `authorized_keys` yang digunakan SSH server untuk menyimpan daftar public key yang diizinkan melakukan autentikasi.
+
+```bash
+nano /home/mika_admin/.ssh/authorized_keys
+```
+
+Public key yang diperoleh dari node Mika kemudian ditempelkan ke dalam file authorized_keys.
+
+![alt text](image-63.png)
+
+Setelah public key dimasukkan, permission dan ownership file diatur agar sesuai dengan user mika_admin.
+
+```bash
+chmod 600 /home/mika_admin/.ssh/authorized_keys
+chown -R mika_admin:mika_admin /home/mika_admin/.ssh
+```
+![alt text](image-64.png)
+
+Terlihat bahwa direktori .ssh dan file authorized_keys dimiliki oleh mika_admin, sehingga SSH server dapat menggunakan file tersebut untuk melakukan verifikasi public key ketika user melakukan login.
+
+Terakhir, dilakukan koneksi SSH dari node Mika menuju node Knights menggunakan private key yang telah dibuat sebelumnya.
+
+```bash
+ssh -i /home/mika_admin/.ssh/id_ed25519 mika_admin@192.214.3.2
+```
+
+![alt text](image-65.png)
+
+Koneksi tersebut menggunakan private key pada node Mika untuk membuktikan identitas user mika_admin. Karena public key yang sesuai telah terdaftar pada authorized_keys di Knights dan autentikasi password dinonaktifkan, proses login dapat dilakukan tanpa mengirimkan password.
+
+Untuk memverifikasi proses komunikasi SSH secara lebih mendalam, dilakukan capture paket menggunakan Wireshark pada interface GNS3 yang membawa traffic antara node Mika (192.214.1.3) dan node Knights (192.214.3.2). Capture dilakukan sebelum koneksi SSH dijalankan, kemudian koneksi SSH diinisiasi dari node Mika menggunakan perintah:
+
+```bash
+ssh -i /home/mika_admin/.ssh/id_ed25519 mika_admin@192.214.3.2
+```
+
+Filter tcp.port == 22 diterapkan pada Wireshark untuk menyaring hanya paket yang berkaitan dengan sesi SSH.
+
+![alt text](image-66.png)
+
+Pada hasil capture, teridentifikasi dua paket awal yang merupakan bagian dari tahap Protocol Version Exchange, yaitu paket No. 4 dan No. 6.
+
+- Paket No. 4: Mika (192.214.1.3) -> Knights (192.214.3.2), dengan informasi `Client: Protocol (SSH-2.0-OpenSSH_10.2)`
+- Paket No. 6: Knights (192.214.3.2) -> Mika (192.214.1.3), dengan informasi `Server: Protocol (SSH-2.0-OpenSSH_10.2)`
+
+Pada tahap ini, client dan server saling mengumumkan versi protokol SSH yang digunakan. Informasi versi protokol dikirim sebelum enkripsi sesi terbentuk sehingga masih dapat terbaca. Kedua node menggunakan versi `SSH-2.0-OpenSSH_10.2.`
+
+Setelah Protocol Version Exchange, proses berlanjut ke tahap Key Exchange. Paket yang teridentifikasi adalah:
+
+- Paket No. 9: Mika (192.214.1.3) -> Knights (192.214.3.2), dengan informasi `Client: Key Exchange Init`
+- Paket No. 11: Knights (192.214.3.2) ->Mika (192.214.1.3), dengan informasi `Server: Key Exchange Init`
+
+Pada tahap Key Exchange Init, client dan server saling bertukar daftar algoritma kriptografi yang didukung untuk melakukan negosiasi. Negosiasi ini mencakup algoritma key exchange, enkripsi, MAC, dan kompresi yang akan digunakan selama sesi berlangsung.
+
+Untuk membuktikan bahwa kredensial tidak dikirimkan dalam bentuk teks terbuka, dilakukan inspeksi menggunakan fitur Follow TCP Stream pada Wireshark dengan mengklik kanan salah satu paket SSH dan memilih Follow → TCP Stream.
+
+![alt text](image-67.png)
+
+Dari hasil Follow TCP Stream, terlihat dua bagian yang berbeda:
+
+Pada bagian awal, terdapat informasi yang masih dapat terbaca, yaitu:
+
+```bash
+SSH-2.0-OpenSSH_10.2
+SSH-2.0-OpenSSH_10.2
+```
+Bagian ini merupakan Protocol Version Exchange yang memang terjadi sebelum enkripsi sesi terbentuk. Selain itu, terlihat pula daftar algoritma yang dinegosiasikan, seperti `mlkem768x25519-sha256, curve25519-sha256, chacha20-poly1305@openssh.com`, dan `aes256-gcm@openssh.com`. Informasi tersebut merupakan parameter negosiasi kriptografi, bukan username maupun password.
+
+Setelah proses key exchange selesai, seluruh data sesi terlihat sebagai karakter acak dan tidak dapat dibaca seperti pada gambar. Hal ini menunjukkan bahwa payload sesi SSH setelah key exchange telah terenkripsi sepenuhnya dan tidak dapat diinterpretasikan melalui packet capture.
+
+Berbeda dengan Telnet yang mengirimkan seluruh data termasuk username dan password dalam bentuk plaintext, SSH tidak menampilkan kredensial apapun yang dapat terbaca pada hasil Follow TCP Stream. Pada konfigurasi ini, autentikasi dilakukan menggunakan mekanisme public key authentication, sehingga password login memang tidak dikirimkan melalui jaringan sama sekali. Mika membuktikan kepemilikan private key `id_ed25519`, sementara Knights memverifikasinya menggunakan public key yang tersimpan di file `authorized_keys`. Proses autentikasi tersebut pun berlangsung di dalam saluran komunikasi yang telah terenkripsi, sehingga tidak dapat diamati melalui packet capture.
+
+### 14 - 
