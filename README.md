@@ -1287,3 +1287,58 @@ Berbeda dengan Telnet yang mengirimkan seluruh data termasuk username dan passwo
 
 
 ### 14 - 
+
+Setelah gagal mengakses FTP, Eiri melancarkan serangan brute-force terhadap form login web Alice. Analisis file capture wired_bruteforce.pcapng untuk mengidentifikasi alamat IP penyerang, target IP beserta port yang diserang, password user lain_admin yang berhasil ditembus, serta web server software dan versi yang dilaporkan pada response header. Validasi temuan kalian pada socket server: nc [IP_Group] 3401 
+
+Pertama - tama, file dibuka di wireshark. Untuk mengidentifikasi aktivitas login, diterapkan display filter berikut:
+
+```bash
+frame contains "Login"
+```
+
+![alt text](image-74.png)
+
+Dari hasil filter, teridentifikasi bahwa:
+
+- IP Penyerang: 172.26.7.50
+- IP Target: 172.26.7.100
+- Port Target: 8080
+
+
+
+Paket tersebut kemudian Salah satu paket kemudian diklik kanan dan dipilih Follow → TCP Stream untuk melihat isi lengkap komunikasi HTTP.
+
+![alt text](image-75.png)
+
+Berikut adalah isi paket:
+
+```bash
+POST /login.php HTTP/1.1
+Host: 172.26.7.100:8080
+User-Agent: Fuzz Faster U Fool v2.1.0-dev
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 45
+
+username=lain_admin&password=wired_pr0tocol_7
+HTTP/1.1 200 OK
+Server: Apache/2.4.62
+Content-Type: text/html; charset=UTF-8
+Content-Length: 35
+X-Powered-By: PHP/8.3.14
+
+<h1>Success! Login successful.</h1>
+```
+Dari TCP Stream tersebut ditemukan informasi berikut:
+
+- Username: lain_admin
+- Password: wired_pr0tocol_7
+- Web Server: Apache/2.4.62
+
+
+Berikut adalah validasi jika jawaban sudah benar:
+
+![alt text](image-76.png)
+
+### 15 - 
+
+### 16 - 
