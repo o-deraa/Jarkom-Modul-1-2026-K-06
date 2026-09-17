@@ -6,7 +6,7 @@
 |Dewa Ngakan Gede Wira Adhimukti|5027251063|
 |Razana Aulia|5027251127|
 
-## Laporan 
+## Laporan Praktikum 
 ### 1. Membangun The Wired
    
 Untuk membangun The Wired, Lain (Router) harus membuat tiga Switch, dengan rincian:
@@ -754,10 +754,54 @@ Chisa FTP Server (192.214.2.2)
 
 Dari hasil analisis tersebut dapat disimpulkan bahwa node Knights berhasil melakukan upload `knights_report.txt` ke FTP Server Chisa menggunakan akun `alice`. Tiga informasi utama yang diperoleh dari packet capture adalah perintah `STOR knights_report.txt` sebagai indikasi proses upload, response `226 Transfer complete` sebagai indikasi transfer berhasil, serta port TCP 16.194 yang dinegosiasikan server melalui response `227` pada passive mode.
 
-### 9 - 
+### 9 - Akses Dokumen Protokol Tujuh oleh Mika
 
+Mika mengakses dokumen Protokol Tujuh dari FTP Server Chisa. Dari node Mika, unduh file tersebut menggunakan akun mika. Setelah itu, buktikan pembatasan read-only dengayahn mencoba mengunggah file baru dari akun mika, dan tunjukkan pesan error respon server (error 550 Permission denied) saat mika mencoba melakukan upload.
 
+Pertama-tama, file Protokol Tujuh perlu diunduh terlebih dahulu dan diletakkan pada server FTP Chisa. Oleh karena itu, proses pengunduhan file dilakukan melalui node Chisa menggunakan command berikut.
 
+```bash
+wget --no-check-certificate \
+"https://drive.google.com/uc?export=download&id=1tKZu0rcti4t-fXX4jtXDSKDBWzsawfoN" \
+-O Protokol_Tujuh.zip
+
+unzip Protokol_Tujuh
+```
+
+![alt text](image-69.png)
+
+Setelah proses ekstraksi selesai, didapatkan file `protocol7_manifesto.txt`. Selanjutnya, file tersebut dipindahkan ke dalam direktori yang digunakan sebagai folder server FTP Chisa, yaitu `/var/wired/data/`.
+
+```bash
+ cp protocol7_manifesto.txt /var/wired/data/
+```
+
+![alt text](image-70.png)
+
+File berhasil dipindahkan ke dalam folder server FTP.
+
+Selanjutnya dilakukan pengujian akses read menggunakan node Mika. Mika melakukan koneksi ke FTP Server Chisa menggunakan akun mika, kemudian mengunduh file `protocol7_manifesto.txt`.
+
+```bash
+lftp -u mika,mika123 192.214.2.2
+get protocol7_manifesto.txt
+
+```
+
+![alt text](image-71.png)
+
+File berhasil diunduh oleh Mika. Hal ini menunjukkan bahwa akun mika memiliki hak akses `read` terhadap file pada FTP Server Chisa.
+
+Selanjutnya dilakukan pengujian terhadap hak akses `write`. Mika membuat sebuah file baru bernama `test_mika.txt`, kemudian mencoba mengunggahnya ke FTP Server Chisa menggunakan perintah `put`.
+
+```bash
+echo "Test  Mika" > test_mika.txt
+ put test_mika.txt
+```
+
+![alt text](image-72.png)
+
+Upload file ditolak oleh FTP Server dengan pesan `550 Permission denied`. Hal ini menunjukkan bahwa akun mika tidak memiliki hak akses write, sehingga akun tersebut hanya dapat membaca atau mengunduh file dari FTP Server Chisa.
 
 ### 10 - Uji Ketahanan Koneksi Knights ke Server Chisa
 
@@ -1075,6 +1119,13 @@ ssh-keygen -A
 ```
 ![alt text](image-57.png)
 
+Untuk memastikan akun tidak terkunci dapat digunakan oleh SSH, buat password lokal untuk akun tersebut:
+
+```bash
+passwd mika_admin
+```
+Password ini hanya digunakan untuk memastikan akun `mika_admin` tidak terkunci. Pada konfigurasi SSH selanjutnya, `PasswordAuthentication` akan dinonaktifkan sehingga password tidak digunakan untuk login SSH.
+
 Kemudian dilakukan konfigurasi SSH pada file `/etc/ssh/sshd_config`. Konfigurasi berikut mengaktifkan autentikasi menggunakan public key dan menonaktifkan autentikasi menggunakan password.
 
 ```
@@ -1098,43 +1149,45 @@ ss -lntp | grep ':22'
 
 ![alt text](image-58.png)
 
-Setelah SSH server pada Knights siap, dilakukan konfigurasi user `mika_admin` pada node Mika. User tersebut digunakan sebagai identitas client yang akan melakukan koneksi SSH.
+Setelah SSH server pada Knights siap, dilakukan pembuatan pasangan kunci SSH pada node Mika. Pada konfigurasi ini tidak dibuat user `mika_admin` pada Mika karena `mika_admin` merupakan user yang berada pada server Knights. Node Mika menggunakan user yang sedang aktif, yaitu root, untuk menyimpan pasangan kunci SSH pada direktori `/root/.ssh`.
 
-```bash
-adduser -D mika_admin
+Pertama-tama dibuat direktori .ssh pada home directory user yang sedang aktif.
+
 ```
-Kemudian dibuat direktori `.ssh` pada home directory user `mika_admin`.
-
-```bash
-mkdir -p /home/mika_admin/.ssh
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
 ```
 
 Selanjutnya dibuat pasangan kunci SSH menggunakan algoritma `Ed25519`.
 
 ```bash
-ssh-keygen -t ed25519 -f /home/mika_admin/.ssh/id_ed25519
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
 ```
 
-Pada proses `ssh-keygen`, lokasi penyimpanan key ditentukan pada `/home/mika_admin/.ssh/id_ed25519`. Passphrase dikosongkan dengan menekan Enter sehingga private key dapat digunakan tanpa memasukkan passphrase tambahan ketika melakukan koneksi SSH.
+Pada proses ssh-keygen, lokasi penyimpanan key ditentukan pada `~/.ssh/id_ed25519`. Karena Mika menggunakan user root, lokasi tersebut mengarah ke:
 
+```bash
+/root/.ssh/id_ed25519
+```
+
+Passphrase dikosongkan dengan menekan Enter sehingga private key dapat digunakan tanpa memasukkan passphrase tambahan ketika melakukan koneksi SSH.
 
 Hasil pembuatan key terdiri dari dua file, yaitu:
 
 - `id_ed25519`: private key yang harus dijaga kerahasiaannya dan tidak boleh diberikan kepada pihak lain.
 - `id_ed25519.pub`:  public key yang dapat didaftarkan pada server SSH.
 
-Permission dan ownership direktori serta file key kemudian diatur agar hanya user mika_admin yang dapat mengakses private key.
+Permission file key kemudian diatur agar private key hanya dapat diakses oleh user yang membuatnya.
 
 ```bash
-chown -R mika_admin:mika_admin /home/mika_admin/.ssh 
-chmod 700 /home/mika_admin/.ssh 
-chmod 600 /home/mika_admin/.ssh/id_ed25519 
-chmod 644 /home/mika_admin/.ssh/id_ed25519.pub
+chmod 600 ~/.ssh/id_ed25519
+chmod 644 ~/.ssh/id_ed25519.pub
 ```
 
-Dengan konfigurasi tersebut, direktori `.ssh `hanya dapat diakses oleh owner, private key hanya dapat dibaca dan ditulis oleh `mika_admin`, sedangkan public key dapat dibaca oleh user lain apabila diperlukan.
+Dengan konfigurasi tersebut, direktori .ssh hanya dapat diakses oleh owner, private key hanya dapat dibaca dan ditulis oleh owner, sedangkan public key dapat dibaca oleh user lain apabila diperlukan.
 
-Pada direktori /home/mika_admin/.ssh terdapat dua file hasil pembuatan pasangan kunci SSH.
+Pada direktori /root/.ssh terdapat dua file hasil pembuatan pasangan kunci SSH.
+
 ![ ](image-61.png)
 
 
@@ -1145,9 +1198,9 @@ cat /home/mika_admin/.ssh/id_ed25519.pub
 ```
 ![alt text](image-62.png)
 
-Public key tersebut kemudian disalin secara keseluruhan dan digunakan sebagai public key yang diizinkan untuk user mika_admin pada node Knights.
+Public key tersebut kemudian disalin secara keseluruhan dan digunakan sebagai public key yang diizinkan untuk user `mika_admin` pada node Knights.
 
-Pada node Knights dibuat direktori .ssh untuk user mika_admin.
+Pada node Knights dibuat direktori `.ssh` untuk user mika_admin.
 
 ```bash
 mkdir -p /home/mika_admin/.ssh
@@ -1163,15 +1216,22 @@ Public key yang diperoleh dari node Mika kemudian ditempelkan ke dalam file auth
 
 ![alt text](image-63.png)
 
-Setelah public key dimasukkan, permission dan ownership file diatur agar sesuai dengan user mika_admin.
+Setelah public key dimasukkan, permission dan ownership file diatur agar sesuai dengan user `mika_admin`.
 
 ```bash
-chmod 600 /home/mika_admin/.ssh/authorized_keys
+chmod 600 /home/mika_admin/.ssh/authorized_keys 
 chown -R mika_admin:mika_admin /home/mika_admin/.ssh
 ```
+
+Selain itu, permission dan ownership home directory `mika_admin` juga disesuaikan untuk memastikan pemeriksaan `StrictModes SSH` tidak menolak file autentikasi.
+
+```
+chmod 755 /home/mika_admin
+chown mika_admin:mika_admin /home/mika_admin
+```
+
 ![alt text](image-64.png)
 
-Terlihat bahwa direktori .ssh dan file authorized_keys dimiliki oleh mika_admin, sehingga SSH server dapat menggunakan file tersebut untuk melakukan verifikasi public key ketika user melakukan login.
 
 Terakhir, dilakukan koneksi SSH dari node Mika menuju node Knights menggunakan private key yang telah dibuat sebelumnya.
 
@@ -1224,5 +1284,6 @@ Bagian ini merupakan Protocol Version Exchange yang memang terjadi sebelum enkri
 Setelah proses key exchange selesai, seluruh data sesi terlihat sebagai karakter acak dan tidak dapat dibaca seperti pada gambar. Hal ini menunjukkan bahwa payload sesi SSH setelah key exchange telah terenkripsi sepenuhnya dan tidak dapat diinterpretasikan melalui packet capture.
 
 Berbeda dengan Telnet yang mengirimkan seluruh data termasuk username dan password dalam bentuk plaintext, SSH tidak menampilkan kredensial apapun yang dapat terbaca pada hasil Follow TCP Stream. Pada konfigurasi ini, autentikasi dilakukan menggunakan mekanisme public key authentication, sehingga password login memang tidak dikirimkan melalui jaringan sama sekali. Mika membuktikan kepemilikan private key `id_ed25519`, sementara Knights memverifikasinya menggunakan public key yang tersimpan di file `authorized_keys`. Proses autentikasi tersebut pun berlangsung di dalam saluran komunikasi yang telah terenkripsi, sehingga tidak dapat diamati melalui packet capture.
+
 
 ### 14 - 
